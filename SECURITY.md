@@ -22,4 +22,8 @@ maintainer before publishing details publicly. Include:
 Daily Replica stores activity data locally in SQLite under the user's
 Application Support directory. The app may request macOS Accessibility access
 for focused window titles and Automation access for reading the active Chrome
-tab URL.
+tab URL. If either permission is denied, app-level tracking continues and the
+unavailable window or URL detail is left blank.
+
+The app includes local controls to export data as JSON, export activity segments
+as CSV, clear activity history, and reset all local data stored by Daily Replica.

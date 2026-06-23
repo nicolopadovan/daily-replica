@@ -306,6 +306,18 @@ public final class SQLiteActivityStore {
         try stepDone(statement)
     }
 
+    public func deleteAllActivityData() throws {
+        try execute("DELETE FROM project_sessions")
+        try execute("DELETE FROM activity_segments")
+    }
+
+    public func deleteAllUserData() throws {
+        try deleteAllActivityData()
+        try execute("DELETE FROM classification_rules")
+        try execute("DELETE FROM project_contexts")
+        try execute("DELETE FROM categories WHERE is_built_in = 0")
+    }
+
     private func migrate() throws {
         try execute("PRAGMA journal_mode = WAL")
         try execute("PRAGMA foreign_keys = ON")

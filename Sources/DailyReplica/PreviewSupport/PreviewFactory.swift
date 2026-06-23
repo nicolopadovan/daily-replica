@@ -33,7 +33,11 @@ enum PreviewFactory {
 
     static func settingsViewModel(section: SettingsSection = .categories) -> SettingsViewModel {
         let fixture = makeFixture()
-        let viewModel = SettingsViewModel(state: fixture.state, libraryService: fixture.libraryService)
+        let viewModel = SettingsViewModel(
+            state: fixture.state,
+            libraryService: fixture.libraryService,
+            privacyService: fixture.privacyService
+        )
         viewModel.selectedSection = section
         return viewModel
     }
@@ -88,6 +92,11 @@ enum PreviewFactory {
             contextPersistence: contextPersistence
         )
         let dashboardService = DashboardService(store: store, state: state)
+        let privacyService = PrivacyService(
+            store: store,
+            state: state,
+            contextPersistence: contextPersistence
+        )
         let promptService = PromptService(state: state, libraryService: libraryService)
         let trackingService = TrackingService(
             store: store,
@@ -130,6 +139,7 @@ enum PreviewFactory {
             segmentEditingService: segmentEditingService,
             projectSessionService: projectSessionService,
             dashboardService: dashboardService,
+            privacyService: privacyService,
             promptService: promptService,
             trackingService: trackingService,
             coordinator: PreviewCoordinator()
@@ -210,6 +220,7 @@ private struct PreviewFixture {
     let segmentEditingService: SegmentEditingService
     let projectSessionService: ProjectSessionService
     let dashboardService: DashboardService
+    let privacyService: PrivacyService
     let promptService: PromptService
     let trackingService: TrackingService
     let coordinator: AppCoordinating
@@ -235,6 +246,16 @@ private final class PreviewActivityStore: ActivityStore {
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] { projectSessions }
     func fetchOpenProjectSession() throws -> ProjectSession? { projectSessions.last { $0.end == nil } }
     func upsertProjectSession(_ session: ProjectSession) throws { projectSessions.append(session) }
+    func deleteAllActivityData() throws {
+        segments.removeAll()
+        projectSessions.removeAll()
+    }
+    func deleteAllUserData() throws {
+        categories = CategoryID.builtInDefinitions
+        contexts.removeAll()
+        rules.removeAll()
+        try deleteAllActivityData()
+    }
 }
 
 private struct PreviewCurrentContextPersistence: CurrentContextPersisting {

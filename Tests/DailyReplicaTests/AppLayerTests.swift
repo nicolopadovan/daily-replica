@@ -326,6 +326,77 @@ final class DashboardServiceTests: XCTestCase {
 }
 
 @MainActor
+final class PrivacyServiceTests: XCTestCase {
+    func testJSONExportIncludesStoredData() throws {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue,
+            contextID: context.id,
+            contextName: context.name
+        )
+        harness.store.categories = CategoryID.builtInDefinitions
+        harness.store.contexts = [context]
+        harness.store.rules = [
+            ClassificationRule(kind: .appBundleID, pattern: "com.apple.dt.Xcode", categoryID: CategoryID.work.rawValue)
+        ]
+        harness.store.segments = [segment]
+
+        let json = String(decoding: try harness.privacyService.exportJSONData(), as: UTF8.self)
+
+        XCTAssertTrue(json.contains("Client"))
+        XCTAssertTrue(json.contains("Xcode"))
+        XCTAssertTrue(json.contains("com.apple.dt.Xcode"))
+    }
+
+    func testClearActivityDataUpdatesStoreAndState() {
+        let harness = AppHarness()
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.store.segments = [segment]
+        harness.state.todaySegments = [segment]
+        harness.state.dashboardSegments = [segment]
+
+        harness.privacyService.clearActivityData()
+
+        XCTAssertTrue(harness.store.segments.isEmpty)
+        XCTAssertTrue(harness.state.todaySegments.isEmpty)
+        XCTAssertTrue(harness.state.dashboardSegments.isEmpty)
+    }
+
+    func testResetAllDataClearsUserCreatedState() {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let rule = ClassificationRule(kind: .chromeHost, pattern: "github.com", categoryID: CategoryID.work.rawValue)
+        harness.store.categories = CategoryID.builtInDefinitions + [CategoryDefinition(id: "reading", name: "Reading")]
+        harness.store.contexts = [context]
+        harness.store.rules = [rule]
+        harness.state.categories = harness.store.categories
+        harness.state.contexts = [context]
+        harness.state.rules = [rule]
+        harness.state.currentContextID = context.id
+        harness.contextPersistence.saveCurrentContextID(context.id)
+
+        harness.privacyService.resetAllData()
+
+        XCTAssertEqual(harness.state.categories.map(\.id).sorted(), CategoryID.builtInDefinitions.map(\.id).sorted())
+        XCTAssertTrue(harness.state.contexts.isEmpty)
+        XCTAssertTrue(harness.state.rules.isEmpty)
+        XCTAssertNil(harness.state.currentContextID)
+        XCTAssertNil(harness.contextPersistence.savedID)
+    }
+}
+
+@MainActor
 final class TrackingServiceTests: XCTestCase {
     func testCaptureTickCreatesAndUpdatesClassifiedSegment() {
         let harness = AppHarness()
@@ -685,7 +756,11 @@ final class ViewModelTests: XCTestCase {
 
     func testSettingsViewModelCreatesCategoryAndClearsField() {
         let harness = AppHarness()
-        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+        let viewModel = SettingsViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            privacyService: harness.privacyService
+        )
         viewModel.categoryName = "Reading"
 
         viewModel.createCategory()
@@ -700,7 +775,11 @@ final class ViewModelTests: XCTestCase {
             correctedAppSegment(start: 10, end: 70),
             correctedAppSegment(start: 70, end: 130)
         ]
-        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+        let viewModel = SettingsViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            privacyService: harness.privacyService
+        )
 
         XCTAssertEqual(viewModel.ruleSuggestions.count, 1)
         XCTAssertEqual(viewModel.ruleSuggestions.first?.pattern, "com.example.Editor")
@@ -713,7 +792,11 @@ final class ViewModelTests: XCTestCase {
             correctedAppSegment(start: 10, end: 70),
             correctedAppSegment(start: 70, end: 130)
         ]
-        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+        let viewModel = SettingsViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            privacyService: harness.privacyService
+        )
 
         guard let suggestion = viewModel.ruleSuggestions.first else {
             return XCTFail("Expected a rule suggestion")
@@ -738,7 +821,11 @@ final class ViewModelTests: XCTestCase {
             )
         ]
         harness.store.segments = harness.state.todaySegments
-        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+        let viewModel = SettingsViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            privacyService: harness.privacyService
+        )
         viewModel.bulkRuleCategoryID = CategoryID.personal.rawValue
 
         guard let candidate = viewModel.unclassifiedCandidates.first else {
@@ -749,6 +836,32 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(changed, 1)
         XCTAssertEqual(harness.state.rules.first?.categoryID, CategoryID.personal.rawValue)
         XCTAssertEqual(harness.state.todaySegments.first?.categoryID, CategoryID.personal.rawValue)
+    }
+
+    func testSettingsViewModelExportsTextAndClearsActivity() {
+        let harness = AppHarness()
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.store.segments = [segment]
+        harness.state.todaySegments = [segment]
+        let viewModel = SettingsViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            privacyService: harness.privacyService
+        )
+
+        XCTAssertTrue(viewModel.exportJSONText()?.contains("Xcode") == true)
+        XCTAssertTrue(viewModel.exportSegmentsCSVText()?.contains("Xcode") == true)
+
+        viewModel.clearActivityData()
+
+        XCTAssertTrue(harness.state.todaySegments.isEmpty)
+        XCTAssertTrue(harness.store.segments.isEmpty)
     }
 
     func testMenuViewModelCapturesNewSegmentWhenProjectChangesDuringTracking() {
@@ -806,6 +919,7 @@ private final class AppHarness {
     let segmentEditingService: SegmentEditingService
     let projectSessionService: ProjectSessionService
     let dashboardService: DashboardService
+    let privacyService: PrivacyService
     let promptService: PromptService
     let trackingService: TrackingService
 
@@ -823,6 +937,11 @@ private final class AppHarness {
             contextPersistence: contextPersistence
         )
         dashboardService = DashboardService(store: store, state: state)
+        privacyService = PrivacyService(
+            store: store,
+            state: state,
+            contextPersistence: contextPersistence
+        )
         promptService = PromptService(state: state, libraryService: libraryService, promptEngine: promptEngine)
         trackingService = TrackingService(
             store: store,
@@ -910,6 +1029,18 @@ private final class InMemoryActivityStore: ActivityStore {
         projectSessions.removeAll { $0.id == session.id }
         projectSessions.append(session)
         upsertedProjectSessions.append(session)
+    }
+
+    func deleteAllActivityData() throws {
+        segments.removeAll()
+        projectSessions.removeAll()
+    }
+
+    func deleteAllUserData() throws {
+        categories = categories.filter(\.isBuiltIn)
+        contexts.removeAll()
+        rules.removeAll()
+        try deleteAllActivityData()
     }
 }
 

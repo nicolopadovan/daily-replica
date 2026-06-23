@@ -18,6 +18,7 @@
 		010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000009 /* PromptPanelCoordinator.swift */; };
 		01010000000000000000000A /* PromptService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000A /* PromptService.swift */; };
 		010100000000000000000017 /* DashboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000018 /* DashboardService.swift */; };
+		010100000000000000000018 /* PrivacyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000019 /* PrivacyService.swift */; };
 		010100000000000000000016 /* ProjectSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000017 /* ProjectSessionService.swift */; };
 		01010000000000000000000B /* SegmentEditingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000B /* SegmentEditingService.swift */; };
 		01010000000000000000000C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000C /* SettingsView.swift */; };
@@ -31,6 +32,7 @@
 		010100000000000000000013 /* TrackingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000013 /* TrackingService.swift */; };
 		010100000000000000000014 /* PreviewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000015 /* PreviewFactory.swift */; };
 		010200000000000000000001 /* ActivityClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000001 /* ActivityClassifier.swift */; };
+		01020000000000000000000B /* ActivityDataExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000B /* ActivityDataExport.swift */; };
 		010200000000000000000002 /* ActivityDayPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000002 /* ActivityDayPresentation.swift */; };
 		010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000009 /* ActivityDashboardPresentation.swift */; };
 		010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000003 /* ActivitySegmentReducer.swift */; };
@@ -87,6 +89,7 @@
 		020100000000000000000009 /* PromptPanelCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptPanelCoordinator.swift; sourceTree = "<group>"; };
 		02010000000000000000000A /* PromptService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptService.swift; sourceTree = "<group>"; };
 		020100000000000000000018 /* DashboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardService.swift; sourceTree = "<group>"; };
+		020100000000000000000019 /* PrivacyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyService.swift; sourceTree = "<group>"; };
 		020100000000000000000017 /* ProjectSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSessionService.swift; sourceTree = "<group>"; };
 		02010000000000000000000B /* SegmentEditingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentEditingService.swift; sourceTree = "<group>"; };
 		02010000000000000000000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -101,6 +104,7 @@
 		020100000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		020100000000000000000015 /* PreviewFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewFactory.swift; sourceTree = "<group>"; };
 		020200000000000000000001 /* ActivityClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityClassifier.swift; sourceTree = "<group>"; };
+		02020000000000000000000B /* ActivityDataExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDataExport.swift; sourceTree = "<group>"; };
 		020200000000000000000002 /* ActivityDayPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDayPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000009 /* ActivityDashboardPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDashboardPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000003 /* ActivitySegmentReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentReducer.swift; sourceTree = "<group>"; };
@@ -232,6 +236,7 @@
 			children = (
 				020100000000000000000018 /* DashboardService.swift */,
 				020100000000000000000006 /* LibraryService.swift */,
+				020100000000000000000019 /* PrivacyService.swift */,
 				02010000000000000000000A /* PromptService.swift */,
 				020100000000000000000017 /* ProjectSessionService.swift */,
 				02010000000000000000000B /* SegmentEditingService.swift */,
@@ -298,6 +303,7 @@
 			isa = PBXGroup;
 			children = (
 				020200000000000000000001 /* ActivityClassifier.swift */,
+				02020000000000000000000B /* ActivityDataExport.swift */,
 				020200000000000000000009 /* ActivityDashboardPresentation.swift */,
 				020200000000000000000002 /* ActivityDayPresentation.swift */,
 				020200000000000000000003 /* ActivitySegmentReducer.swift */,
@@ -426,6 +432,7 @@
 				010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */,
 				01010000000000000000000A /* PromptService.swift in Sources */,
 				010100000000000000000017 /* DashboardService.swift in Sources */,
+				010100000000000000000018 /* PrivacyService.swift in Sources */,
 				010100000000000000000016 /* ProjectSessionService.swift in Sources */,
 				01010000000000000000000B /* SegmentEditingService.swift in Sources */,
 				01010000000000000000000C /* SettingsView.swift in Sources */,
@@ -446,6 +453,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				010200000000000000000001 /* ActivityClassifier.swift in Sources */,
+				01020000000000000000000B /* ActivityDataExport.swift in Sources */,
 				010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */,
 				010200000000000000000002 /* ActivityDayPresentation.swift in Sources */,
 				010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */,

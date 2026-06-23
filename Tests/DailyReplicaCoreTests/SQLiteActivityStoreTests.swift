@@ -123,4 +123,73 @@ final class SQLiteActivityStoreTests: XCTestCase {
             []
         )
     }
+
+    func testDeleteAllActivityDataKeepsLibraryData() throws {
+        let store = try SQLiteActivityStore(path: ":memory:")
+        let start = Date(timeIntervalSince1970: 100)
+        let createdAt = Date(timeIntervalSince1970: 50)
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let rule = ClassificationRule(
+            kind: .appBundleID,
+            pattern: "com.apple.dt.Xcode",
+            categoryID: CategoryID.work.rawValue,
+            createdAt: createdAt
+        )
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(60),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        let session = ProjectSession(
+            contextID: context.id,
+            contextName: context.name,
+            start: start,
+            end: start.addingTimeInterval(60)
+        )
+
+        try store.upsertContext(context)
+        try store.upsertRule(rule)
+        try store.upsertSegment(segment)
+        try store.upsertProjectSession(session)
+        try store.deleteAllActivityData()
+
+        XCTAssertEqual(try store.fetchSegments(in: DateInterval(start: start, duration: 120)), [])
+        XCTAssertEqual(try store.fetchProjectSessions(in: DateInterval(start: start, duration: 120)), [])
+        XCTAssertEqual(try store.fetchContexts().map(\.id), [context.id])
+        XCTAssertEqual(try store.fetchContexts().map(\.name), [context.name])
+        XCTAssertEqual(try store.fetchRules().map(\.id), [rule.id])
+        XCTAssertEqual(try store.fetchRules().map(\.pattern), [rule.pattern])
+    }
+
+    func testDeleteAllUserDataKeepsBuiltInCategoriesOnly() throws {
+        let store = try SQLiteActivityStore(path: ":memory:")
+        let start = Date(timeIntervalSince1970: 100)
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let rule = ClassificationRule(kind: .chromeHost, pattern: "github.com", categoryID: CategoryID.work.rawValue)
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(60),
+            state: .active,
+            appName: "Chrome",
+            categoryID: CategoryID.work.rawValue
+        )
+
+        try store.upsertCategory(CategoryDefinition(id: "reading", name: "Reading"))
+        try store.upsertContext(context)
+        try store.upsertRule(rule)
+        try store.upsertSegment(segment)
+        try store.upsertProjectSession(ProjectSession(contextID: context.id, contextName: context.name, start: start))
+        try store.deleteAllUserData()
+
+        XCTAssertEqual(try store.fetchSegments(in: DateInterval(start: start, duration: 120)), [])
+        XCTAssertEqual(try store.fetchProjectSessions(in: DateInterval(start: start, duration: 120)), [])
+        XCTAssertEqual(try store.fetchContexts(), [])
+        XCTAssertEqual(try store.fetchRules(), [])
+        XCTAssertEqual(
+            try store.fetchCategories().map(\.id).sorted(),
+            CategoryID.builtInDefinitions.map(\.id).sorted()
+        )
+    }
 }

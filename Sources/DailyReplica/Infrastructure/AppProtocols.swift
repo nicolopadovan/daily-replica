@@ -15,6 +15,8 @@ protocol ActivityStore: AnyObject {
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession]
     func fetchOpenProjectSession() throws -> ProjectSession?
     func upsertProjectSession(_ session: ProjectSession) throws
+    func deleteAllActivityData() throws
+    func deleteAllUserData() throws
 }
 
 extension ActivityStore {

@@ -42,11 +42,13 @@ final class SettingsViewModel: ObservableObject {
 
     private let state: AppState
     private let libraryService: LibraryService
+    private let privacyService: PrivacyService
     private var stateCancellable: AnyCancellable?
 
-    init(state: AppState, libraryService: LibraryService) {
+    init(state: AppState, libraryService: LibraryService, privacyService: PrivacyService) {
         self.state = state
         self.libraryService = libraryService
+        self.privacyService = privacyService
         stateCancellable = state.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -110,6 +112,32 @@ final class SettingsViewModel: ObservableObject {
 
     func updateRuleCategory(id: UUID, categoryID: String) {
         libraryService.updateRuleCategory(id: id, categoryID: categoryID)
+    }
+
+    func exportJSONText() -> String? {
+        do {
+            return String(decoding: try privacyService.exportJSONData(), as: UTF8.self)
+        } catch {
+            state.lastError = error.localizedDescription
+            return nil
+        }
+    }
+
+    func exportSegmentsCSVText() -> String? {
+        do {
+            return String(decoding: try privacyService.exportSegmentsCSVData(), as: UTF8.self)
+        } catch {
+            state.lastError = error.localizedDescription
+            return nil
+        }
+    }
+
+    func clearActivityData() {
+        privacyService.clearActivityData()
+    }
+
+    func resetAllData() {
+        privacyService.resetAllData()
     }
 
     func setCurrentContext(id: UUID) {

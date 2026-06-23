@@ -1,8 +1,15 @@
 import DailyReplicaCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @State private var jsonExportDocument = TextExportDocument()
+    @State private var csvExportDocument = TextExportDocument()
+    @State private var isExportingJSON = false
+    @State private var isExportingCSV = false
+    @State private var isConfirmingActivityClear = false
+    @State private var isConfirmingFullReset = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -13,6 +20,32 @@ struct SettingsView: View {
                     .padding(24)
             }
             .background(CalmPalette.porcelain.opacity(0.42))
+        }
+        .fileExporter(
+            isPresented: $isExportingJSON,
+            document: jsonExportDocument,
+            contentType: .json,
+            defaultFilename: "daily-replica-export"
+        ) { _ in }
+        .fileExporter(
+            isPresented: $isExportingCSV,
+            document: csvExportDocument,
+            contentType: .dailyReplicaCSV,
+            defaultFilename: "daily-replica-segments"
+        ) { _ in }
+        .confirmationDialog("Clear activity history?", isPresented: $isConfirmingActivityClear) {
+            Button("Clear activity history", role: .destructive) {
+                viewModel.clearActivityData()
+            }
+        } message: {
+            Text("This removes tracked segments and project sessions. Categories, projects, and rules stay in place.")
+        }
+        .confirmationDialog("Reset all local data?", isPresented: $isConfirmingFullReset) {
+            Button("Reset all local data", role: .destructive) {
+                viewModel.resetAllData()
+            }
+        } message: {
+            Text("This removes tracked activity, project sessions, custom projects, and rules stored on this Mac.")
         }
     }
 
@@ -294,7 +327,7 @@ struct SettingsView: View {
                     icon: viewModel.accessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
                     tint: viewModel.accessibilityTrusted ? CalmPalette.cypress : CalmPalette.persimmon,
                     title: viewModel.accessibilityTrusted ? "Window titles enabled" : "Window titles disabled",
-                    subtitle: "Accessibility lets Daily Replica read the focused window title."
+                    subtitle: "Accessibility lets Daily Replica read focused window titles. Without it, app-level tracking still works."
                 )
 
                 HStack {
@@ -302,21 +335,87 @@ struct SettingsView: View {
                         icon: "globe",
                         tint: CalmPalette.signalBlue,
                         title: "Chrome URLs",
-                        subtitle: "macOS asks for Automation permission the first time Chrome is queried."
+                        subtitle: "Automation is requested only when Chrome tab URLs are queried. If denied, website detail stays blank."
                     )
                     Spacer()
                 }
                 .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
             }
 
-            Button("Request Accessibility permission") {
-                viewModel.requestAccessibilityPermission()
+            HStack {
+                Button("Request Accessibility permission") {
+                    viewModel.requestAccessibilityPermission()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(CalmPalette.cypress)
+                Spacer()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(CalmPalette.cypress)
+
+            CreatePanel(
+                title: "Local data",
+                subtitle: "Export or remove data stored by this copy of Daily Replica."
+            ) {
+                HStack(spacing: 10) {
+                    Button {
+                        if let text = viewModel.exportJSONText() {
+                            jsonExportDocument = TextExportDocument(text: text)
+                            isExportingJSON = true
+                        }
+                    } label: {
+                        Label("Export JSON", systemImage: "doc.badge.arrow.up")
+                    }
+
+                    Button {
+                        if let text = viewModel.exportSegmentsCSVText() {
+                            csvExportDocument = TextExportDocument(text: text)
+                            isExportingCSV = true
+                        }
+                    } label: {
+                        Label("Export CSV", systemImage: "tablecells")
+                    }
+
+                    Spacer()
+
+                    Button(role: .destructive) {
+                        isConfirmingActivityClear = true
+                    } label: {
+                        Label("Clear activity", systemImage: "clock.badge.xmark")
+                    }
+
+                    Button(role: .destructive) {
+                        isConfirmingFullReset = true
+                    } label: {
+                        Label("Reset all", systemImage: "trash")
+                    }
+                }
+            }
         }
     }
 
+}
+
+private struct TextExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json, .dailyReplicaCSV, .plainText] }
+    static var writableContentTypes: [UTType] { readableContentTypes }
+    var text: String
+
+    init(text: String = "") {
+        self.text = text
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        text = ""
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: Data(text.utf8))
+    }
+}
+
+private extension UTType {
+    static var dailyReplicaCSV: UTType {
+        UTType(filenameExtension: "csv") ?? .plainText
+    }
 }
 
 private struct PreferencePane<Content: View>: View {

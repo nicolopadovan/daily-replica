@@ -48,6 +48,22 @@ and allow Daily Replica from there.
 4. Check your timeline when you want a recap
 5. Adjust categories when needed
 
+## 🔒 Local Data And Privacy
+
+Daily Replica stores its SQLite database locally at:
+
+```text
+~/Library/Application Support/DailyReplica/activity.sqlite
+```
+
+From **Settings → Permissions**, you can export local data as JSON, export
+activity segments as CSV, clear activity history, or reset all local data.
+
+Accessibility permission is used for focused window titles. Chrome Automation is
+used only to read the active Chrome tab URL. If either permission is denied,
+Daily Replica keeps tracking at the app level and leaves unavailable details
+blank.
+
 ## 🛠️ Build From Source
 
 For app development in Xcode, open:
