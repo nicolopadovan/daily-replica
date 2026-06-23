@@ -13,9 +13,9 @@ Commands:
 
 Environment variables:
   DAILY_REPLICA_VERSION
-      CFBundleShortVersionString / MARKETING_VERSION. Default: 0.1.1
+      CFBundleShortVersionString / MARKETING_VERSION. Default: 0.1.2
   DAILY_REPLICA_BUILD_NUMBER
-      CFBundleVersion / CURRENT_PROJECT_VERSION integer. Default: 2
+      CFBundleVersion / CURRENT_PROJECT_VERSION integer. Default: 3
   DAILY_REPLICA_SPARKLE_PUBLIC_ED_KEY
       Optional override for the project Sparkle public EdDSA key.
   DAILY_REPLICA_NOTARY_PROFILE
@@ -46,8 +46,8 @@ COMMAND="${1:-release}"
 PRODUCT_NAME="DailyReplica"
 SCHEME="DailyReplica"
 PROJECT_PATH="$ROOT_DIR/DailyReplica.xcodeproj"
-VERSION="${DAILY_REPLICA_VERSION:-0.1.1}"
-BUILD_NUMBER="${DAILY_REPLICA_BUILD_NUMBER:-2}"
+VERSION="${DAILY_REPLICA_VERSION:-0.1.2}"
+BUILD_NUMBER="${DAILY_REPLICA_BUILD_NUMBER:-3}"
 SPARKLE_PUBLIC_ED_KEY="${DAILY_REPLICA_SPARKLE_PUBLIC_ED_KEY:-}"
 NOTARY_PROFILE="${DAILY_REPLICA_NOTARY_PROFILE:-}"
 EXPORT_OPTIONS_PLIST="${DAILY_REPLICA_EXPORT_OPTIONS_PLIST:-$ROOT_DIR/Scripts/ExportOptions.plist}"
@@ -152,6 +152,7 @@ update_appcast() {
 
     "$generate_appcast" \
         --download-url-prefix "$APPCAST_DOWNLOAD_URL_PREFIX" \
+        --maximum-versions 1 \
         "$RELEASE_DIR"
 
     if [[ ! -f "$RELEASE_DIR/appcast.xml" ]]; then

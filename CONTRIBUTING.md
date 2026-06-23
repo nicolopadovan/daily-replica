@@ -53,8 +53,8 @@ Prerequisites:
 Release command:
 
 ```bash
-DAILY_REPLICA_VERSION="0.1.1" \
-DAILY_REPLICA_BUILD_NUMBER="2" \
+DAILY_REPLICA_VERSION="0.1.2" \
+DAILY_REPLICA_BUILD_NUMBER="3" \
 DAILY_REPLICA_NOTARY_PROFILE="<notarytool profile>" \
 bash Scripts/build-app.sh release
 ```

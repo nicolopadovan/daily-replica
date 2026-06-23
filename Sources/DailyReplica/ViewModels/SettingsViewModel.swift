@@ -7,6 +7,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case contexts
     case rules
     case permissions
+    case updates
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .contexts: "Projects"
         case .rules: "Auto-sort"
         case .permissions: "Permissions"
+        case .updates: "Updates"
         }
     }
 
@@ -25,6 +27,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .contexts: "folder.fill"
         case .rules: "tag.fill"
         case .permissions: "lock.shield.fill"
+        case .updates: "arrow.triangle.2.circlepath"
         }
     }
 }
@@ -43,13 +46,24 @@ final class SettingsViewModel: ObservableObject {
     private let state: AppState
     private let libraryService: LibraryService
     private let privacyService: PrivacyService
+    private let updateService: UpdateService?
     private var stateCancellable: AnyCancellable?
+    private var updateCancellable: AnyCancellable?
 
-    init(state: AppState, libraryService: LibraryService, privacyService: PrivacyService) {
+    init(
+        state: AppState,
+        libraryService: LibraryService,
+        privacyService: PrivacyService,
+        updateService: UpdateService? = nil
+    ) {
         self.state = state
         self.libraryService = libraryService
         self.privacyService = privacyService
+        self.updateService = updateService
         stateCancellable = state.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        updateCancellable = updateService?.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
     }
@@ -58,6 +72,13 @@ final class SettingsViewModel: ObservableObject {
     var contexts: [ProjectContext] { state.contexts }
     var rules: [ClassificationRule] { state.rules }
     var accessibilityTrusted: Bool { state.accessibilityTrusted }
+    var updatesConfigured: Bool { updateService?.isConfigured ?? false }
+    var canCheckForUpdates: Bool { updateService?.canCheckForUpdates ?? false }
+    var automaticallyChecksForUpdates: Bool { updateService?.automaticallyChecksForUpdates ?? false }
+    var automaticallyDownloadsUpdates: Bool { updateService?.automaticallyDownloadsUpdates ?? false }
+    var allowsAutomaticUpdates: Bool { updateService?.allowsAutomaticUpdates ?? false }
+    var updateCheckInterval: TimeInterval { updateService?.updateCheckInterval ?? 86_400 }
+    var updateFeedURL: URL? { updateService?.feedURL }
     var ruleSuggestions: [ClassificationCandidate] {
         ClassificationCandidatePresenter.ruleSuggestions(from: state.todaySegments, rules: state.rules)
     }
@@ -154,5 +175,21 @@ final class SettingsViewModel: ObservableObject {
 
     func requestAccessibilityPermission() {
         libraryService.refreshAccessibilityTrust(prompt: true)
+    }
+
+    func checkForUpdates() {
+        updateService?.checkForUpdates()
+    }
+
+    func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
+        updateService?.setAutomaticallyChecksForUpdates(enabled)
+    }
+
+    func setAutomaticallyDownloadsUpdates(_ enabled: Bool) {
+        updateService?.setAutomaticallyDownloadsUpdates(enabled)
+    }
+
+    func setUpdateCheckInterval(_ interval: TimeInterval) {
+        updateService?.setUpdateCheckInterval(interval)
     }
 }

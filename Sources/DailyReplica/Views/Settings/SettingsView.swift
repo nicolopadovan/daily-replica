@@ -96,6 +96,8 @@ struct SettingsView: View {
             rulesPane
         case .permissions:
             permissionsPane
+        case .updates:
+            updatesPane
         }
     }
 
@@ -392,6 +394,92 @@ struct SettingsView: View {
         }
     }
 
+    private var updatesPane: some View {
+        PreferencePane(title: "Updates", subtitle: "Signed releases are checked through Sparkle.") {
+            VStack(spacing: 10) {
+                PreferenceRow(
+                    icon: viewModel.updatesConfigured ? "checkmark.seal.fill" : "exclamationmark.triangle.fill",
+                    tint: viewModel.updatesConfigured ? CalmPalette.cypress : CalmPalette.persimmon,
+                    title: viewModel.updatesConfigured ? "Sparkle is configured" : "Sparkle is unavailable",
+                    subtitle: viewModel.updateFeedURL?.absoluteString ?? "No appcast feed is configured for this build."
+                )
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Toggle("Automatic update checks", isOn: automaticUpdateChecksBinding)
+
+                    Picker("Check interval", selection: updateIntervalBinding) {
+                        ForEach(updateIntervalOptions, id: \.seconds) { option in
+                            Text(option.title).tag(option.seconds)
+                        }
+                    }
+                    .disabled(!viewModel.automaticallyChecksForUpdates)
+
+                    Toggle("Download updates in the background", isOn: automaticDownloadBinding)
+                        .disabled(!viewModel.allowsAutomaticUpdates)
+
+                    HStack {
+                        Button {
+                            viewModel.checkForUpdates()
+                        } label: {
+                            Label("Check for Updates...", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .disabled(!viewModel.canCheckForUpdates)
+
+                        Spacer()
+
+                        Text(appVersionText)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(16)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .disabled(!viewModel.updatesConfigured)
+            }
+        }
+    }
+
+    private var automaticUpdateChecksBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.automaticallyChecksForUpdates },
+            set: { viewModel.setAutomaticallyChecksForUpdates($0) }
+        )
+    }
+
+    private var automaticDownloadBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.automaticallyDownloadsUpdates },
+            set: { viewModel.setAutomaticallyDownloadsUpdates($0) }
+        )
+    }
+
+    private var updateIntervalBinding: Binding<TimeInterval> {
+        Binding(
+            get: { nearestUpdateInterval(to: viewModel.updateCheckInterval) },
+            set: { viewModel.setUpdateCheckInterval($0) }
+        )
+    }
+
+    private var updateIntervalOptions: [(title: String, seconds: TimeInterval)] {
+        [
+            ("Every 6 hours", 21_600),
+            ("Every 12 hours", 43_200),
+            ("Daily", 86_400),
+            ("Weekly", 604_800)
+        ]
+    }
+
+    private func nearestUpdateInterval(to interval: TimeInterval) -> TimeInterval {
+        updateIntervalOptions.min { abs($0.seconds - interval) < abs($1.seconds - interval) }?.seconds ?? 86_400
+    }
+
+    private var appVersionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        return "Version \(version) (\(build))"
+    }
+
 }
 
 private struct TextExportDocument: FileDocument {
@@ -499,6 +587,11 @@ private struct PreferenceRow: View {
 
 #Preview("Settings Rules") {
     SettingsView(viewModel: PreviewFactory.settingsViewModel(section: .rules))
+        .frame(width: 820, height: 620)
+}
+
+#Preview("Settings Updates") {
+    SettingsView(viewModel: PreviewFactory.settingsViewModel(section: .updates))
         .frame(width: 820, height: 620)
 }
 

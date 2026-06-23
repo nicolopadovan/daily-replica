@@ -494,7 +494,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 532NRWLQ2D;
 				INFOPLIST_FILE = Sources/DailyReplica/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -502,7 +502,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
 				PRODUCT_NAME = DailyReplica;
 				SPARKLE_PUBLIC_ED_KEY = "A3rFbkeEIbHjR21LYAVTsArHtwvUtHRxowLs7eL9BU8=";
@@ -517,7 +517,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 532NRWLQ2D;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/DailyReplica/Resources/Info.plist;
@@ -526,7 +526,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
 				PRODUCT_NAME = DailyReplica;
 				SPARKLE_PUBLIC_ED_KEY = "A3rFbkeEIbHjR21LYAVTsArHtwvUtHRxowLs7eL9BU8=";

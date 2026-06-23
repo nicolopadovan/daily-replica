@@ -81,7 +81,8 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
             self.settingsViewModel = SettingsViewModel(
                 state: state,
                 libraryService: libraryService,
-                privacyService: privacyService
+                privacyService: privacyService,
+                updateService: updateService
             )
 
             self.menuBarViewModel.coordinator = self
