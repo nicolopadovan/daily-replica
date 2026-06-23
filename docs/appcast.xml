@@ -3,15 +3,16 @@
     <channel>
         <title>DailyReplica</title>
         <item>
-            <title>0.1.2</title>
-            <pubDate>Tue, 23 Jun 2026 22:27:51 +0200</pubDate>
-            <sparkle:version>3</sparkle:version>
-            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
+            <title>0.1.3</title>
+            <pubDate>Wed, 24 Jun 2026 01:29:51 +0200</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.2/DailyReplica-0.1.2-macos-arm64.zip" length="1500617" type="application/octet-stream" sparkle:edSignature="wiV6qeHpaCepGaGbPDXRyN1XzCRuS1alG8XDEEKry4/BLAVGeGBYf6gXdMx9esKVE1lppQkCL0cRJSNv/rRgDg=="/>
+            <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.3/DailyReplica-0.1.3-macos-arm64.zip" length="1662835" type="application/octet-stream" sparkle:edSignature="QbFUl6NBlO32g0xwxxK95RW7syTLZM6AO3/A3KPjVp0+L1VmuCe1omh2U1kiUQ00BBNjg3pcWr1DKlmIaKzEBg=="/>
             <sparkle:deltas>
-                <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.2/DailyReplica3-2.delta" sparkle:deltaFrom="2" length="71834" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="C1hyAaQzPQHfoSHs9B4ki5y4jzei6hnpTAS2NxW1plxg254QNXGq69fKU0NjI0MwjMWO2S1qrBEhOYxtdoD/Bw=="/>
+                <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.3/DailyReplica4-3.delta" sparkle:deltaFrom="3" length="297230" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="/xEXfc9sR1rWLyYT1UEVLrLkH3Wv72/QJZANrNqImM6h19WucNdO7YY9Jjy7BpNRYRp1UbNsBkKYenceSsaIBQ=="/>
+                <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.3/DailyReplica4-2.delta" sparkle:deltaFrom="2" length="303334" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="shDfPamL4qSnAhsdlAF4IUpKnWm+JP/ZH/7DTmQ3cF1JcHahWg4KWUn/07YegLi2GF3CLzet/XofvrYkEKJdDA=="/>
             </sparkle:deltas>
         </item>
     </channel>
