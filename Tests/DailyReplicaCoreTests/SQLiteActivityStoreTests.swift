@@ -87,4 +87,40 @@ final class SQLiteActivityStoreTests: XCTestCase {
         let segments = try store.fetchSegments(in: DateInterval(start: start, duration: 120))
         XCTAssertEqual(segments, [second])
     }
+
+    func testPersistsFetchesAndUpdatesProjectSessions() throws {
+        let store = try SQLiteActivityStore(path: ":memory:")
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let start = Date(timeIntervalSince1970: 100)
+        let createdAt = Date(timeIntervalSince1970: 90)
+        var session = ProjectSession(
+            contextID: context.id,
+            contextName: context.name,
+            start: start,
+            createdAt: createdAt,
+            updatedAt: createdAt
+        )
+
+        try store.upsertProjectSession(session)
+
+        XCTAssertEqual(try store.fetchOpenProjectSession(), session)
+        XCTAssertEqual(
+            try store.fetchProjectSessions(in: DateInterval(start: start.addingTimeInterval(-10), duration: 20)),
+            [session]
+        )
+
+        session.end = start.addingTimeInterval(120)
+        session.updatedAt = session.end!
+        try store.upsertProjectSession(session)
+
+        XCTAssertNil(try store.fetchOpenProjectSession())
+        XCTAssertEqual(
+            try store.fetchProjectSessions(in: DateInterval(start: start.addingTimeInterval(60), duration: 120)),
+            [session]
+        )
+        XCTAssertEqual(
+            try store.fetchProjectSessions(in: DateInterval(start: start.addingTimeInterval(130), duration: 60)),
+            []
+        )
+    }
 }

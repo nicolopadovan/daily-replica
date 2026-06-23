@@ -13,12 +13,19 @@ final class MenuBarViewModel: ObservableObject {
     private let state: AppState
     private let trackingService: TrackingService
     private let libraryService: LibraryService
+    private let projectSessionService: ProjectSessionService
     private var stateCancellable: AnyCancellable?
 
-    init(state: AppState, trackingService: TrackingService, libraryService: LibraryService) {
+    init(
+        state: AppState,
+        trackingService: TrackingService,
+        libraryService: LibraryService,
+        projectSessionService: ProjectSessionService
+    ) {
         self.state = state
         self.trackingService = trackingService
         self.libraryService = libraryService
+        self.projectSessionService = projectSessionService
         stateCancellable = state.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -34,6 +41,12 @@ final class MenuBarViewModel: ObservableObject {
     var accessibilityTrusted: Bool { state.accessibilityTrusted }
     var todaySummary: ActivityDaySummary { state.todaySummary }
     var todayRibbonEntries: [ActivityRibbonEntry] { state.todayRibbonEntries }
+    var currentProjectElapsed: String {
+        guard let session = state.activeProjectSession else {
+            return "--"
+        }
+        return DurationFormatter.format(session.duration())
+    }
 
     var latestSegmentElapsed: TimeInterval {
         guard let latestSegment else {
@@ -62,12 +75,18 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     func toggleTracking() {
-        isTracking ? trackingService.stopTracking() : trackingService.startTracking()
+        if isTracking {
+            trackingService.stopTracking()
+            projectSessionService.closeActiveSession()
+        } else {
+            projectSessionService.setCurrentContext(id: state.currentContextID)
+            trackingService.startTracking()
+        }
     }
 
     func setCurrentContext(selection: String) {
         let previousContextID = state.currentContextID
-        libraryService.setCurrentContext(id: UUID(uuidString: selection))
+        projectSessionService.setCurrentContext(id: UUID(uuidString: selection))
         if state.isTracking, previousContextID != state.currentContextID {
             trackingService.handleEvent(.heartbeat)
         }
@@ -83,8 +102,16 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     func createProject() {
-        guard libraryService.addContext(name: newProjectName, defaultCategoryID: newProjectCategoryID) != nil else {
+        guard let context = libraryService.addContext(
+            name: newProjectName,
+            defaultCategoryID: newProjectCategoryID,
+            selectCurrent: false
+        ) else {
             return
+        }
+        projectSessionService.setCurrentContext(id: context.id)
+        if state.isTracking {
+            trackingService.handleEvent(.heartbeat)
         }
         newProjectName = ""
         isCreatingProject = false

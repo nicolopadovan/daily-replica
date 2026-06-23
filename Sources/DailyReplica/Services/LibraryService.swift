@@ -49,7 +49,7 @@ final class LibraryService {
     }
 
     @discardableResult
-    func addContext(name: String, defaultCategoryID: String?) -> ProjectContext? {
+    func addContext(name: String, defaultCategoryID: String?, selectCurrent: Bool = true) -> ProjectContext? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return nil
@@ -59,7 +59,9 @@ final class LibraryService {
             try store.upsertContext(context)
             state.contexts.append(context)
             sortContexts()
-            setCurrentContext(id: context.id)
+            if selectCurrent {
+                setCurrentContext(id: context.id)
+            }
             return context
         } catch {
             state.lastError = error.localizedDescription

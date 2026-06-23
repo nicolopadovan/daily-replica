@@ -17,6 +17,7 @@
 		010100000000000000000008 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000008 /* MenuBarViewModel.swift */; };
 		010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000009 /* PromptPanelCoordinator.swift */; };
 		01010000000000000000000A /* PromptService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000A /* PromptService.swift */; };
+		010100000000000000000016 /* ProjectSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000017 /* ProjectSessionService.swift */; };
 		01010000000000000000000B /* SegmentEditingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000B /* SegmentEditingService.swift */; };
 		01010000000000000000000C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000C /* SettingsView.swift */; };
 		01010000000000000000000D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000D /* SettingsViewModel.swift */; };
@@ -82,6 +83,7 @@
 		020100000000000000000008 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		020100000000000000000009 /* PromptPanelCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptPanelCoordinator.swift; sourceTree = "<group>"; };
 		02010000000000000000000A /* PromptService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptService.swift; sourceTree = "<group>"; };
+		020100000000000000000017 /* ProjectSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSessionService.swift; sourceTree = "<group>"; };
 		02010000000000000000000B /* SegmentEditingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentEditingService.swift; sourceTree = "<group>"; };
 		02010000000000000000000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		02010000000000000000000D /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
@@ -224,6 +226,7 @@
 			children = (
 				020100000000000000000006 /* LibraryService.swift */,
 				02010000000000000000000A /* PromptService.swift */,
+				020100000000000000000017 /* ProjectSessionService.swift */,
 				02010000000000000000000B /* SegmentEditingService.swift */,
 				020100000000000000000013 /* TrackingService.swift */,
 			);
@@ -413,6 +416,7 @@
 				010100000000000000000008 /* MenuBarViewModel.swift in Sources */,
 				010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */,
 				01010000000000000000000A /* PromptService.swift in Sources */,
+				010100000000000000000016 /* ProjectSessionService.swift in Sources */,
 				01010000000000000000000B /* SegmentEditingService.swift in Sources */,
 				01010000000000000000000C /* SettingsView.swift in Sources */,
 				01010000000000000000000D /* SettingsViewModel.swift in Sources */,

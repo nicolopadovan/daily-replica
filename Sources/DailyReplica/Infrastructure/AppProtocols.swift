@@ -12,6 +12,9 @@ protocol ActivityStore: AnyObject {
     func upsertSegment(_ segment: ActivitySegment) throws
     func deleteSegment(id: UUID) throws
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment]
+    func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession]
+    func fetchOpenProjectSession() throws -> ProjectSession?
+    func upsertProjectSession(_ session: ProjectSession) throws
 }
 
 extension ActivityStore {

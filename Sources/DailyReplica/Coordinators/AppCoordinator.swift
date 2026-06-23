@@ -12,6 +12,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
     let settingsViewModel: SettingsViewModel
 
     private let libraryService: LibraryService
+    private let projectSessionService: ProjectSessionService
     private let promptService: PromptService
     private let promptPanelCoordinator: PromptPanelCoordinator
     private var openWindow: ((String) -> Void)?
@@ -29,6 +30,11 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
                 contextPersistence: contextPersistence,
                 permissionChecker: permissionChecker
             )
+            let projectSessionService = ProjectSessionService(
+                store: store,
+                state: state,
+                contextPersistence: contextPersistence
+            )
             let promptService = PromptService(state: state, libraryService: libraryService)
             let trackingService = TrackingService(
                 store: store,
@@ -43,12 +49,14 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
 
             self.state = state
             self.libraryService = libraryService
+            self.projectSessionService = projectSessionService
             self.promptService = promptService
             self.promptPanelCoordinator = promptPanelCoordinator
             self.menuBarViewModel = MenuBarViewModel(
                 state: state,
                 trackingService: trackingService,
-                libraryService: libraryService
+                libraryService: libraryService,
+                projectSessionService: projectSessionService
             )
             self.todayViewModel = TodayViewModel(
                 state: state,
@@ -78,6 +86,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
                 self?.objectWillChange.send()
             }
             libraryService.loadState()
+            projectSessionService.loadState()
         } catch {
             fatalError("Daily Replica could not open its local store: \(error)")
         }
@@ -102,6 +111,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
 
     func openToday() {
         libraryService.reloadToday()
+        projectSessionService.reloadToday()
         openWindow?("today")
     }
 

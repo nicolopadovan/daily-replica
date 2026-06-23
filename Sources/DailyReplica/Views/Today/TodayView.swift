@@ -56,6 +56,11 @@ struct TodayView: View {
                     Text(viewModel.currentContextName)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    if viewModel.activeProjectSession != nil {
+                        Text("Project time \(viewModel.activeProjectElapsed)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()

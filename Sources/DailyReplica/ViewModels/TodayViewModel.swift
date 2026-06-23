@@ -39,6 +39,13 @@ final class TodayViewModel: ObservableObject {
     var isTracking: Bool { state.isTracking }
     var categories: [CategoryDefinition] { state.categories }
     var contexts: [ProjectContext] { state.contexts }
+    var activeProjectSession: ProjectSession? { state.activeProjectSession }
+    var activeProjectElapsed: String {
+        guard let activeProjectSession else {
+            return "--"
+        }
+        return DurationFormatter.format(activeProjectSession.duration())
+    }
     var canSplitSelectedSegment: Bool {
         guard let segment = selectedSegment else {
             return false
@@ -141,7 +148,7 @@ final class TodayViewModel: ObservableObject {
 
     @discardableResult
     func createContext(name: String, defaultCategoryID: String?) -> ProjectContext? {
-        libraryService.addContext(name: name, defaultCategoryID: defaultCategoryID)
+        libraryService.addContext(name: name, defaultCategoryID: defaultCategoryID, selectCurrent: false)
     }
 
     func openSettings() {

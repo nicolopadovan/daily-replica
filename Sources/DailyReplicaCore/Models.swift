@@ -69,6 +69,38 @@ public struct ProjectContext: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public struct ProjectSession: Codable, Equatable, Identifiable, Sendable {
+    public var id: UUID
+    public var contextID: UUID
+    public var contextName: String
+    public var start: Date
+    public var end: Date?
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        contextID: UUID,
+        contextName: String,
+        start: Date,
+        end: Date? = nil,
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil
+    ) {
+        self.id = id
+        self.contextID = contextID
+        self.contextName = contextName
+        self.start = start
+        self.end = end
+        self.createdAt = createdAt ?? start
+        self.updatedAt = updatedAt ?? end ?? start
+    }
+
+    public func duration(until now: Date = Date()) -> TimeInterval {
+        max(0, (end ?? now).timeIntervalSince(start))
+    }
+}
+
 public enum ClassificationRuleKind: String, Codable, CaseIterable, Sendable {
     case appBundleID
     case chromeHost

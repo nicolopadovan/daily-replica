@@ -122,6 +122,78 @@ final class SegmentEditingServiceTests: XCTestCase {
 }
 
 @MainActor
+final class ProjectSessionServiceTests: XCTestCase {
+    func testSwitchingProjectsClosesOldSessionAndStartsNewOne() {
+        let harness = AppHarness()
+        let first = ProjectContext(name: "Client A", defaultCategoryID: CategoryID.work.rawValue)
+        let second = ProjectContext(name: "Client B", defaultCategoryID: CategoryID.work.rawValue)
+        harness.state.contexts = [first, second]
+        harness.state.currentContextID = first.id
+        harness.state.todayProjectSessions = [
+            ProjectSession(
+                contextID: first.id,
+                contextName: first.name,
+                start: Date(timeIntervalSince1970: 100),
+                createdAt: Date(timeIntervalSince1970: 100),
+                updatedAt: Date(timeIntervalSince1970: 100)
+            )
+        ]
+
+        harness.projectSessionService.setCurrentContext(id: second.id, now: Date(timeIntervalSince1970: 160))
+
+        XCTAssertEqual(harness.state.currentContextID, second.id)
+        XCTAssertEqual(harness.state.todayProjectSessions.count, 2)
+        XCTAssertEqual(harness.state.todayProjectSessions[0].end, Date(timeIntervalSince1970: 160))
+        XCTAssertEqual(harness.state.todayProjectSessions[1].contextID, second.id)
+        XCTAssertNil(harness.state.todayProjectSessions[1].end)
+        XCTAssertEqual(harness.contextPersistence.savedID, second.id)
+        XCTAssertEqual(harness.store.upsertedProjectSessions.count, 2)
+    }
+
+    func testSelectingNoProjectClosesActiveSession() {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        harness.state.contexts = [context]
+        harness.state.currentContextID = context.id
+        harness.state.todayProjectSessions = [
+            ProjectSession(
+                contextID: context.id,
+                contextName: context.name,
+                start: Date(timeIntervalSince1970: 100),
+                createdAt: Date(timeIntervalSince1970: 100),
+                updatedAt: Date(timeIntervalSince1970: 100)
+            )
+        ]
+
+        harness.projectSessionService.setCurrentContext(id: nil, now: Date(timeIntervalSince1970: 140))
+
+        XCTAssertNil(harness.state.currentContextID)
+        XCTAssertEqual(harness.state.todayProjectSessions.first?.end, Date(timeIntervalSince1970: 140))
+        XCTAssertNil(harness.contextPersistence.savedID)
+    }
+
+    func testLoadStateUsesOpenSessionAsCurrentContext() {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let session = ProjectSession(
+            contextID: context.id,
+            contextName: context.name,
+            start: Date(timeIntervalSince1970: 100),
+            createdAt: Date(timeIntervalSince1970: 100),
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        harness.state.contexts = [context]
+        harness.store.projectSessions = [session]
+
+        harness.projectSessionService.loadState(now: Date(timeIntervalSince1970: 120))
+
+        XCTAssertEqual(harness.state.currentContextID, context.id)
+        XCTAssertEqual(harness.state.activeProjectSession, session)
+        XCTAssertEqual(harness.contextPersistence.savedID, context.id)
+    }
+}
+
+@MainActor
 final class TrackingServiceTests: XCTestCase {
     func testCaptureTickCreatesAndUpdatesClassifiedSegment() {
         let harness = AppHarness()
@@ -273,16 +345,22 @@ final class PromptServiceTests: XCTestCase {
 final class ViewModelTests: XCTestCase {
     func testMenuViewModelTogglesTrackingService() {
         let harness = AppHarness()
+        let context = ProjectContext(name: "Daily Replica", defaultCategoryID: CategoryID.work.rawValue)
+        harness.state.contexts = [context]
+        harness.state.currentContextID = context.id
         let viewModel = MenuBarViewModel(
             state: harness.state,
             trackingService: harness.trackingService,
-            libraryService: harness.libraryService
+            libraryService: harness.libraryService,
+            projectSessionService: harness.projectSessionService
         )
 
         viewModel.toggleTracking()
         XCTAssertTrue(harness.state.isTracking)
+        XCTAssertEqual(harness.state.activeProjectSession?.contextID, context.id)
         viewModel.toggleTracking()
         XCTAssertFalse(harness.state.isTracking)
+        XCTAssertNotNil(harness.state.todayProjectSessions.first?.end)
     }
 
     func testTodayViewModelFallsBackWhenSelectedSegmentDisappears() {
@@ -374,6 +452,52 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedSegment?.end, selected.end)
     }
 
+    func testMenuViewModelCreateProjectStartsProjectSession() {
+        let harness = AppHarness()
+        let viewModel = MenuBarViewModel(
+            state: harness.state,
+            trackingService: harness.trackingService,
+            libraryService: harness.libraryService,
+            projectSessionService: harness.projectSessionService
+        )
+        viewModel.newProjectName = "Client Launch"
+        viewModel.newProjectCategoryID = CategoryID.work.rawValue
+
+        viewModel.createProject()
+
+        let context = harness.state.contexts.first { $0.name == "Client Launch" }
+        XCTAssertEqual(harness.state.currentContextID, context?.id)
+        XCTAssertEqual(harness.state.activeProjectSession?.contextID, context?.id)
+        XCTAssertEqual(harness.store.upsertedProjectSessions.last?.contextName, "Client Launch")
+    }
+
+    func testTodayViewModelCreateProjectAndUseDoesNotSwitchActiveSession() {
+        let harness = AppHarness()
+        let current = ProjectContext(name: "Current", defaultCategoryID: CategoryID.work.rawValue)
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.contexts = [current]
+        harness.state.currentContextID = current.id
+        harness.state.todaySegments = [segment]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService
+        )
+        viewModel.newProjectName = "Correction Project"
+        viewModel.newProjectCategoryID = CategoryID.work.rawValue
+
+        viewModel.createProjectAndUse(segmentID: segment.id)
+
+        XCTAssertEqual(harness.state.currentContextID, current.id)
+        XCTAssertEqual(harness.state.todaySegments.first?.contextName, "Correction Project")
+    }
+
     func testSettingsViewModelCreatesCategoryAndClearsField() {
         let harness = AppHarness()
         let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
@@ -402,7 +526,8 @@ final class ViewModelTests: XCTestCase {
         let viewModel = MenuBarViewModel(
             state: harness.state,
             trackingService: harness.trackingService,
-            libraryService: harness.libraryService
+            libraryService: harness.libraryService,
+            projectSessionService: harness.projectSessionService
         )
 
         viewModel.setCurrentContext(selection: secondContext.id.uuidString)
@@ -425,6 +550,7 @@ private final class AppHarness {
     let promptPresenter = TestPromptPresenter()
     let libraryService: LibraryService
     let segmentEditingService: SegmentEditingService
+    let projectSessionService: ProjectSessionService
     let promptService: PromptService
     let trackingService: TrackingService
 
@@ -436,6 +562,11 @@ private final class AppHarness {
             permissionChecker: permissionChecker
         )
         segmentEditingService = SegmentEditingService(store: store, state: state)
+        projectSessionService = ProjectSessionService(
+            store: store,
+            state: state,
+            contextPersistence: contextPersistence
+        )
         promptService = PromptService(state: state, libraryService: libraryService, promptEngine: promptEngine)
         trackingService = TrackingService(
             store: store,
@@ -458,6 +589,8 @@ private final class InMemoryActivityStore: ActivityStore {
     var segments: [ActivitySegment] = []
     var upsertedSegments: [ActivitySegment] = []
     var deletedSegmentIDs: [UUID] = []
+    var projectSessions: [ProjectSession] = []
+    var upsertedProjectSessions: [ProjectSession] = []
 
     func fetchCategories() throws -> [CategoryDefinition] {
         categories
@@ -503,6 +636,20 @@ private final class InMemoryActivityStore: ActivityStore {
 
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] {
         segments.filter { $0.start < interval.end && $0.end >= interval.start }
+    }
+
+    func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] {
+        projectSessions.filter { $0.start < interval.end && ($0.end ?? .distantFuture) >= interval.start }
+    }
+
+    func fetchOpenProjectSession() throws -> ProjectSession? {
+        projectSessions.last { $0.end == nil }
+    }
+
+    func upsertProjectSession(_ session: ProjectSession) throws {
+        projectSessions.removeAll { $0.id == session.id }
+        projectSessions.append(session)
+        upsertedProjectSessions.append(session)
     }
 }
 

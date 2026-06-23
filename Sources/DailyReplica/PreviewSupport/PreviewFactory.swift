@@ -9,7 +9,8 @@ enum PreviewFactory {
         let viewModel = MenuBarViewModel(
             state: fixture.state,
             trackingService: fixture.trackingService,
-            libraryService: fixture.libraryService
+            libraryService: fixture.libraryService,
+            projectSessionService: fixture.projectSessionService
         )
         viewModel.coordinator = fixture.coordinator
         viewModel.isCreatingProject = showingCreateProject
@@ -80,6 +81,11 @@ enum PreviewFactory {
             permissionChecker: permissionChecker
         )
         let segmentEditingService = SegmentEditingService(store: store, state: state)
+        let projectSessionService = ProjectSessionService(
+            store: store,
+            state: state,
+            contextPersistence: contextPersistence
+        )
         let promptService = PromptService(state: state, libraryService: libraryService)
         let trackingService = TrackingService(
             store: store,
@@ -97,6 +103,13 @@ enum PreviewFactory {
             ProjectContext(name: "Personal Admin", defaultCategoryID: CategoryID.personal.rawValue)
         ]
         state.currentContextID = context.id
+        state.todayProjectSessions = [
+            ProjectSession(
+                contextID: context.id,
+                contextName: context.name,
+                start: Date().addingTimeInterval(-2_400)
+            )
+        ]
         state.rules = [
             ClassificationRule(kind: .appBundleID, pattern: "com.apple.dt.Xcode", categoryID: CategoryID.work.rawValue),
             ClassificationRule(kind: .chromeHost, pattern: "github.com", categoryID: CategoryID.work.rawValue)
@@ -109,6 +122,7 @@ enum PreviewFactory {
             state: state,
             libraryService: libraryService,
             segmentEditingService: segmentEditingService,
+            projectSessionService: projectSessionService,
             promptService: promptService,
             trackingService: trackingService,
             coordinator: PreviewCoordinator()
@@ -161,6 +175,7 @@ private struct PreviewFixture {
     let state: AppState
     let libraryService: LibraryService
     let segmentEditingService: SegmentEditingService
+    let projectSessionService: ProjectSessionService
     let promptService: PromptService
     let trackingService: TrackingService
     let coordinator: AppCoordinating
@@ -171,6 +186,7 @@ private final class PreviewActivityStore: ActivityStore {
     var contexts: [ProjectContext] = []
     var rules: [ClassificationRule] = []
     var segments: [ActivitySegment] = []
+    var projectSessions: [ProjectSession] = []
 
     func fetchCategories() throws -> [CategoryDefinition] { categories }
     func upsertCategory(_ category: CategoryDefinition) throws { categories.append(category) }
@@ -182,6 +198,9 @@ private final class PreviewActivityStore: ActivityStore {
     func upsertSegment(_ segment: ActivitySegment) throws { segments.append(segment) }
     func deleteSegment(id: UUID) throws { segments.removeAll { $0.id == id } }
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] { segments }
+    func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] { projectSessions }
+    func fetchOpenProjectSession() throws -> ProjectSession? { projectSessions.last { $0.end == nil } }
+    func upsertProjectSession(_ session: ProjectSession) throws { projectSessions.append(session) }
 }
 
 private struct PreviewCurrentContextPersistence: CurrentContextPersisting {

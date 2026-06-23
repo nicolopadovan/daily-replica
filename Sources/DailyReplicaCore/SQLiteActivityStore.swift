@@ -246,6 +246,66 @@ public final class SQLiteActivityStore {
         return segments
     }
 
+    public func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] {
+        let statement = try prepare(
+            """
+            SELECT id, context_id, context_name, start_at, end_at, created_at, updated_at
+            FROM project_sessions
+            WHERE start_at < ? AND (end_at IS NULL OR end_at >= ?)
+            ORDER BY start_at ASC
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+        bindDate(statement, 1, interval.end)
+        bindDate(statement, 2, interval.start)
+
+        var sessions: [ProjectSession] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let session = readProjectSession(statement) {
+                sessions.append(session)
+            }
+        }
+        return sessions
+    }
+
+    public func fetchOpenProjectSession() throws -> ProjectSession? {
+        let statement = try prepare(
+            """
+            SELECT id, context_id, context_name, start_at, end_at, created_at, updated_at
+            FROM project_sessions
+            WHERE end_at IS NULL
+            ORDER BY start_at DESC
+            LIMIT 1
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            return nil
+        }
+        return readProjectSession(statement)
+    }
+
+    public func upsertProjectSession(_ session: ProjectSession) throws {
+        let statement = try prepare(
+            """
+            INSERT INTO project_sessions (
+                id, context_id, context_name, start_at, end_at, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                context_id = excluded.context_id,
+                context_name = excluded.context_name,
+                start_at = excluded.start_at,
+                end_at = excluded.end_at,
+                updated_at = excluded.updated_at
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+        bindProjectSession(session, to: statement)
+        try stepDone(statement)
+    }
+
     private func migrate() throws {
         try execute("PRAGMA journal_mode = WAL")
         try execute("PRAGMA foreign_keys = ON")
@@ -315,6 +375,25 @@ public final class SQLiteActivityStore {
             ON activity_segments (start_at, end_at)
             """
         )
+        try execute(
+            """
+            CREATE TABLE IF NOT EXISTS project_sessions (
+                id TEXT PRIMARY KEY,
+                context_id TEXT NOT NULL,
+                context_name TEXT NOT NULL,
+                start_at REAL NOT NULL,
+                end_at REAL,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            )
+            """
+        )
+        try execute(
+            """
+            CREATE INDEX IF NOT EXISTS project_sessions_time
+            ON project_sessions (start_at, end_at)
+            """
+        )
 
         for category in CategoryID.builtInDefinitions {
             try upsertCategory(category)
@@ -361,6 +440,16 @@ public final class SQLiteActivityStore {
         bindDate(statement, 17, segment.updatedAt)
     }
 
+    private func bindProjectSession(_ session: ProjectSession, to statement: OpaquePointer?) {
+        bindUUID(statement, 1, session.id)
+        bindUUID(statement, 2, session.contextID)
+        bindText(statement, 3, session.contextName)
+        bindDate(statement, 4, session.start)
+        bindDate(statement, 5, session.end)
+        bindDate(statement, 6, session.createdAt)
+        bindDate(statement, 7, session.updatedAt)
+    }
+
     private func readSegment(_ statement: OpaquePointer?) -> ActivitySegment? {
         guard
             let idString = columnText(statement, 0),
@@ -394,6 +483,27 @@ public final class SQLiteActivityStore {
         )
     }
 
+    private func readProjectSession(_ statement: OpaquePointer?) -> ProjectSession? {
+        guard
+            let id = columnUUID(statement, 0),
+            let contextID = columnUUID(statement, 1),
+            let contextName = columnText(statement, 2),
+            let start = columnDate(statement, 3)
+        else {
+            return nil
+        }
+
+        return ProjectSession(
+            id: id,
+            contextID: contextID,
+            contextName: contextName,
+            start: start,
+            end: columnDate(statement, 4),
+            createdAt: columnDate(statement, 5) ?? start,
+            updatedAt: columnDate(statement, 6) ?? columnDate(statement, 4) ?? start
+        )
+    }
+
     private func bindText(_ statement: OpaquePointer?, _ index: Int32, _ value: String?) {
         guard let value else {
             sqlite3_bind_null(statement, index)
@@ -408,6 +518,14 @@ public final class SQLiteActivityStore {
 
     private func bindDate(_ statement: OpaquePointer?, _ index: Int32, _ value: Date) {
         sqlite3_bind_double(statement, index, value.timeIntervalSince1970)
+    }
+
+    private func bindDate(_ statement: OpaquePointer?, _ index: Int32, _ value: Date?) {
+        guard let value else {
+            sqlite3_bind_null(statement, index)
+            return
+        }
+        bindDate(statement, index, value)
     }
 
     private func columnText(_ statement: OpaquePointer?, _ index: Int32) -> String? {

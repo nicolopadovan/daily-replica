@@ -97,6 +97,15 @@ struct MenuBarView: View {
                 }
                 .pickerStyle(.menu)
 
+                HStack {
+                    Label("Project time", systemImage: "folder.badge.clock")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(viewModel.currentProjectElapsed)
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                }
+                .font(.caption)
+
                 if viewModel.isCreatingProject {
                     createProjectForm
                 } else {

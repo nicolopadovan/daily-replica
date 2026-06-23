@@ -7,6 +7,7 @@ final class AppState: ObservableObject {
     @Published var categories: [CategoryDefinition] = CategoryID.builtInDefinitions
     @Published var contexts: [ProjectContext] = []
     @Published var currentContextID: UUID?
+    @Published var todayProjectSessions: [ProjectSession] = []
     @Published var rules: [ClassificationRule] = []
     @Published var todaySegments: [ActivitySegment] = []
     @Published var activePrompt: SmartPrompt?
@@ -19,6 +20,10 @@ final class AppState: ObservableObject {
             return nil
         }
         return contexts.first { $0.id == currentContextID }
+    }
+
+    var activeProjectSession: ProjectSession? {
+        todayProjectSessions.last { $0.end == nil }
     }
 
     var todayInterval: DateInterval {
