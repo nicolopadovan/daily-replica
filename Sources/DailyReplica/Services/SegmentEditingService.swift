@@ -35,6 +35,28 @@ final class SegmentEditingService {
         persistSegment(id: segmentID)
     }
 
+    func markInactive(segmentID: UUID) {
+        guard let index = state.todaySegments.firstIndex(where: { $0.id == segmentID }) else {
+            return
+        }
+        var segment = state.todaySegments[index]
+        segment.state = .inactive
+        segment.appBundleID = nil
+        segment.appName = nil
+        segment.windowTitle = nil
+        segment.urlString = nil
+        segment.urlHost = nil
+        segment.categoryID = CategoryID.inactive.rawValue
+        segment.contextID = nil
+        segment.contextName = nil
+        segment.manualCategoryID = nil
+        segment.manualContextID = nil
+        segment.manualNote = nil
+        segment.updatedAt = Date()
+        state.todaySegments[index] = segment
+        persist(segment)
+    }
+
     func splitSegment(segmentID: UUID, at splitTime: Date) -> ActivitySegment? {
         guard let split = reducer.splitSegment(id: segmentID, at: splitTime, in: &state.todaySegments) else {
             return nil

@@ -50,37 +50,37 @@ struct SettingsView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Settings")
-                    .font(.title2.bold())
-                Text("Shape how the day is interpreted.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 10)
-
-            ForEach(SettingsSection.allCases) { section in
-                Button {
-                    viewModel.selectedSection = section
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: section.systemImage)
-                            .frame(width: 18)
-                            .foregroundStyle(viewModel.selectedSection == section ? CalmPalette.cypress : .secondary)
-                        Text(section.title)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(viewModel.selectedSection == section ? CalmPalette.cypress.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Settings")
+                        .font(.title2.bold())
+                    Text("Shape how the day is interpreted.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-            }
+                .padding(.bottom, 10)
 
-            Spacer()
+                ForEach(SettingsSection.allCases) { section in
+                    Button {
+                        viewModel.selectedSection = section
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: section.systemImage)
+                                .frame(width: 18)
+                                .foregroundStyle(viewModel.selectedSection == section ? CalmPalette.cypress : .secondary)
+                            Text(section.title)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(viewModel.selectedSection == section ? CalmPalette.cypress.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(18)
         }
-        .padding(18)
         .frame(width: 210)
         .background(.regularMaterial)
     }

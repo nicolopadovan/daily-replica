@@ -17,34 +17,36 @@
 		010100000000000000000008 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000008 /* MenuBarViewModel.swift */; };
 		010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000009 /* PromptPanelCoordinator.swift */; };
 		01010000000000000000000A /* PromptService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000A /* PromptService.swift */; };
-		010100000000000000000017 /* DashboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000018 /* DashboardService.swift */; };
-		010100000000000000000018 /* PrivacyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000019 /* PrivacyService.swift */; };
-		010100000000000000000016 /* ProjectSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000017 /* ProjectSessionService.swift */; };
 		01010000000000000000000B /* SegmentEditingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000B /* SegmentEditingService.swift */; };
 		01010000000000000000000C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000C /* SettingsView.swift */; };
 		01010000000000000000000D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000D /* SettingsViewModel.swift */; };
 		01010000000000000000000E /* SmartPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000E /* SmartPromptView.swift */; };
 		01010000000000000000000F /* SmartPromptViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000F /* SmartPromptViewModel.swift */; };
 		010100000000000000000010 /* SystemActivitySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000010 /* SystemActivitySampler.swift */; };
-		010100000000000000000015 /* WorkspaceActivityEventObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000016 /* WorkspaceActivityEventObserver.swift */; };
 		010100000000000000000011 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000011 /* TodayView.swift */; };
 		010100000000000000000012 /* TodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000012 /* TodayViewModel.swift */; };
 		010100000000000000000013 /* TrackingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000013 /* TrackingService.swift */; };
 		010100000000000000000014 /* PreviewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000015 /* PreviewFactory.swift */; };
+		010100000000000000000015 /* WorkspaceActivityEventObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000016 /* WorkspaceActivityEventObserver.swift */; };
+		010100000000000000000016 /* ProjectSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000017 /* ProjectSessionService.swift */; };
+		010100000000000000000017 /* DashboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000018 /* DashboardService.swift */; };
+		010100000000000000000018 /* PrivacyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000019 /* PrivacyService.swift */; };
+		010100000000000000000019 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000001A /* UpdateService.swift */; };
 		010200000000000000000001 /* ActivityClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000001 /* ActivityClassifier.swift */; };
-		01020000000000000000000B /* ActivityDataExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000B /* ActivityDataExport.swift */; };
 		010200000000000000000002 /* ActivityDayPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000002 /* ActivityDayPresentation.swift */; };
-		010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000009 /* ActivityDashboardPresentation.swift */; };
 		010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000003 /* ActivitySegmentReducer.swift */; };
-		01020000000000000000000A /* ClassificationCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000A /* ClassificationCandidates.swift */; };
 		010200000000000000000004 /* DateSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000004 /* DateSupport.swift */; };
 		010200000000000000000005 /* IdleClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000005 /* IdleClassifier.swift */; };
 		010200000000000000000006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000006 /* Models.swift */; };
 		010200000000000000000007 /* SQLiteActivityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000007 /* SQLiteActivityStore.swift */; };
 		010200000000000000000008 /* SmartPromptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000008 /* SmartPromptEngine.swift */; };
+		010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000009 /* ActivityDashboardPresentation.swift */; };
+		01020000000000000000000A /* ClassificationCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000A /* ClassificationCandidates.swift */; };
+		01020000000000000000000B /* ActivityDataExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000B /* ActivityDataExport.swift */; };
 		010300000000000000000001 /* DailyReplicaCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000001 /* DailyReplicaCore.framework */; };
 		010300000000000000000002 /* DailyReplicaCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000001 /* DailyReplicaCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		010300000000000000000003 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000003 /* libsqlite3.tbd */; };
+		010300000000000000000004 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 0E0000000000000000000001 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,32 +90,33 @@
 		020100000000000000000008 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		020100000000000000000009 /* PromptPanelCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptPanelCoordinator.swift; sourceTree = "<group>"; };
 		02010000000000000000000A /* PromptService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptService.swift; sourceTree = "<group>"; };
-		020100000000000000000018 /* DashboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardService.swift; sourceTree = "<group>"; };
-		020100000000000000000019 /* PrivacyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyService.swift; sourceTree = "<group>"; };
-		020100000000000000000017 /* ProjectSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSessionService.swift; sourceTree = "<group>"; };
 		02010000000000000000000B /* SegmentEditingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentEditingService.swift; sourceTree = "<group>"; };
 		02010000000000000000000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		02010000000000000000000D /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		02010000000000000000000E /* SmartPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptView.swift; sourceTree = "<group>"; };
 		02010000000000000000000F /* SmartPromptViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptViewModel.swift; sourceTree = "<group>"; };
 		020100000000000000000010 /* SystemActivitySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActivitySampler.swift; sourceTree = "<group>"; };
-		020100000000000000000016 /* WorkspaceActivityEventObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceActivityEventObserver.swift; sourceTree = "<group>"; };
 		020100000000000000000011 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		020100000000000000000012 /* TodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayViewModel.swift; sourceTree = "<group>"; };
 		020100000000000000000013 /* TrackingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingService.swift; sourceTree = "<group>"; };
 		020100000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		020100000000000000000015 /* PreviewFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewFactory.swift; sourceTree = "<group>"; };
+		020100000000000000000016 /* WorkspaceActivityEventObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceActivityEventObserver.swift; sourceTree = "<group>"; };
+		020100000000000000000017 /* ProjectSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSessionService.swift; sourceTree = "<group>"; };
+		020100000000000000000018 /* DashboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardService.swift; sourceTree = "<group>"; };
+		020100000000000000000019 /* PrivacyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyService.swift; sourceTree = "<group>"; };
+		02010000000000000000001A /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
 		020200000000000000000001 /* ActivityClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityClassifier.swift; sourceTree = "<group>"; };
-		02020000000000000000000B /* ActivityDataExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDataExport.swift; sourceTree = "<group>"; };
 		020200000000000000000002 /* ActivityDayPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDayPresentation.swift; sourceTree = "<group>"; };
-		020200000000000000000009 /* ActivityDashboardPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDashboardPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000003 /* ActivitySegmentReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentReducer.swift; sourceTree = "<group>"; };
-		02020000000000000000000A /* ClassificationCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationCandidates.swift; sourceTree = "<group>"; };
 		020200000000000000000004 /* DateSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateSupport.swift; sourceTree = "<group>"; };
 		020200000000000000000005 /* IdleClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleClassifier.swift; sourceTree = "<group>"; };
 		020200000000000000000006 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		020200000000000000000007 /* SQLiteActivityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteActivityStore.swift; sourceTree = "<group>"; };
 		020200000000000000000008 /* SmartPromptEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptEngine.swift; sourceTree = "<group>"; };
+		020200000000000000000009 /* ActivityDashboardPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDashboardPresentation.swift; sourceTree = "<group>"; };
+		02020000000000000000000A /* ClassificationCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationCandidates.swift; sourceTree = "<group>"; };
+		02020000000000000000000B /* ActivityDataExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDataExport.swift; sourceTree = "<group>"; };
 		020300000000000000000001 /* DailyReplicaCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DailyReplicaCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		020300000000000000000002 /* DailyReplica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DailyReplica.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		020300000000000000000003 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
@@ -125,6 +128,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				010300000000000000000001 /* DailyReplicaCore.framework in Frameworks */,
+				010300000000000000000004 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,6 +181,49 @@
 				080000000000000000000010 /* Views */,
 			);
 			path = DailyReplica;
+			sourceTree = "<group>";
+		};
+		080000000000000000000004 /* DailyReplicaCore */ = {
+			isa = PBXGroup;
+			children = (
+				020200000000000000000001 /* ActivityClassifier.swift */,
+				02020000000000000000000B /* ActivityDataExport.swift */,
+				020200000000000000000009 /* ActivityDashboardPresentation.swift */,
+				020200000000000000000002 /* ActivityDayPresentation.swift */,
+				020200000000000000000003 /* ActivitySegmentReducer.swift */,
+				02020000000000000000000A /* ClassificationCandidates.swift */,
+				020200000000000000000004 /* DateSupport.swift */,
+				020200000000000000000005 /* IdleClassifier.swift */,
+				020200000000000000000006 /* Models.swift */,
+				020200000000000000000007 /* SQLiteActivityStore.swift */,
+				020200000000000000000008 /* SmartPromptEngine.swift */,
+			);
+			path = DailyReplicaCore;
+			sourceTree = "<group>";
+		};
+		080000000000000000000005 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				020300000000000000000003 /* libsqlite3.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		080000000000000000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				020300000000000000000002 /* DailyReplica.app */,
+				020300000000000000000001 /* DailyReplicaCore.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		080000000000000000000007 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000006 /* Scripts/build-app.sh */,
+			);
+			name = Scripts;
 			sourceTree = "<group>";
 		};
 		080000000000000000000008 /* Application */ = {
@@ -241,6 +288,7 @@
 				020100000000000000000017 /* ProjectSessionService.swift */,
 				02010000000000000000000B /* SegmentEditingService.swift */,
 				020100000000000000000013 /* TrackingService.swift */,
+				02010000000000000000001A /* UpdateService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -299,49 +347,6 @@
 			path = Today;
 			sourceTree = "<group>";
 		};
-		080000000000000000000004 /* DailyReplicaCore */ = {
-			isa = PBXGroup;
-			children = (
-				020200000000000000000001 /* ActivityClassifier.swift */,
-				02020000000000000000000B /* ActivityDataExport.swift */,
-				020200000000000000000009 /* ActivityDashboardPresentation.swift */,
-				020200000000000000000002 /* ActivityDayPresentation.swift */,
-				020200000000000000000003 /* ActivitySegmentReducer.swift */,
-				02020000000000000000000A /* ClassificationCandidates.swift */,
-				020200000000000000000004 /* DateSupport.swift */,
-				020200000000000000000005 /* IdleClassifier.swift */,
-				020200000000000000000006 /* Models.swift */,
-				020200000000000000000007 /* SQLiteActivityStore.swift */,
-				020200000000000000000008 /* SmartPromptEngine.swift */,
-			);
-			path = DailyReplicaCore;
-			sourceTree = "<group>";
-		};
-		080000000000000000000005 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				020300000000000000000003 /* libsqlite3.tbd */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		080000000000000000000006 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				020300000000000000000002 /* DailyReplica.app */,
-				020300000000000000000001 /* DailyReplicaCore.framework */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		080000000000000000000007 /* Scripts */ = {
-			isa = PBXGroup;
-			children = (
-				020000000000000000000006 /* Scripts/build-app.sh */,
-			);
-			name = Scripts;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -359,6 +364,9 @@
 				0B0000000000000000000001 /* PBXTargetDependency */,
 			);
 			name = DailyReplica;
+			packageProductDependencies = (
+				0E0000000000000000000001 /* Sparkle */,
+			);
 			productName = DailyReplica;
 			productReference = 020300000000000000000002 /* DailyReplica.app */;
 			productType = "com.apple.product-type.application";
@@ -406,6 +414,9 @@
 				Base,
 			);
 			mainGroup = 080000000000000000000001;
+			packageReferences = (
+				0D0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			productRefGroup = 080000000000000000000006 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -433,6 +444,7 @@
 				01010000000000000000000A /* PromptService.swift in Sources */,
 				010100000000000000000017 /* DashboardService.swift in Sources */,
 				010100000000000000000018 /* PrivacyService.swift in Sources */,
+				010100000000000000000019 /* UpdateService.swift in Sources */,
 				010100000000000000000016 /* ProjectSessionService.swift in Sources */,
 				01010000000000000000000B /* SegmentEditingService.swift in Sources */,
 				01010000000000000000000C /* SettingsView.swift in Sources */,
@@ -493,6 +505,7 @@
 				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
 				PRODUCT_NAME = DailyReplica;
+				SPARKLE_PUBLIC_ED_KEY = "A3rFbkeEIbHjR21LYAVTsArHtwvUtHRxowLs7eL9BU8=";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -506,6 +519,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 532NRWLQ2D;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/DailyReplica/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -515,6 +529,7 @@
 				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
 				PRODUCT_NAME = DailyReplica;
+				SPARKLE_PUBLIC_ED_KEY = "A3rFbkeEIbHjR21LYAVTsArHtwvUtHRxowLs7eL9BU8=";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -715,6 +730,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0D0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0E0000000000000000000001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 050000000000000000000001 /* Project object */;
 }

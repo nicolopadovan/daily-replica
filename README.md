@@ -26,6 +26,7 @@ macOS permissions are used only to make the local timeline more useful.
 - 🧾 Review a clean timeline of your day
 - ✏️ Fix anything that was categorized wrong
 - 🔒 Designed to stay local to your Mac
+- ⬆️ Check for signed updates with Sparkle
 
 ## 📦 Installation
 
@@ -39,6 +40,11 @@ Download the latest version from
 
 If macOS blocks the first launch, open **System Settings → Privacy & Security**
 and allow Daily Replica from there.
+
+Release builds are Developer ID signed and notarized. Daily Replica uses
+Sparkle to check the appcast at
+`https://nicolopadovan.github.io/daily-replica/appcast.xml` and can install
+future signed updates from inside the app.
 
 ## 🧭 Usage
 
@@ -76,7 +82,7 @@ For command-line builds and tests:
 
 ```bash
 swift test
-bash Scripts/build-app.sh release
+bash Scripts/build-app.sh debug
 ```
 
 The app will be created at:
@@ -84,6 +90,17 @@ The app will be created at:
 ```text
 .build/DailyReplica.app
 ```
+
+Release packaging is Xcode based and requires Developer ID signing,
+notarization, and the matching Sparkle private key in Keychain:
+
+```bash
+DAILY_REPLICA_NOTARY_PROFILE="<notarytool profile>" \
+bash Scripts/build-app.sh release
+```
+
+The release zip is written to `.build/releases/`, and `docs/appcast.xml` is
+updated from Sparkle's `generate_appcast` output.
 
 ## ❓ FAQ
 

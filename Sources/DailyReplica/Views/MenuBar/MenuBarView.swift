@@ -209,6 +209,15 @@ struct MenuBarView: View {
             }
 
             Button {
+                viewModel.checkForUpdates()
+            } label: {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .frame(width: 30)
+            }
+            .disabled(!viewModel.canCheckForUpdates)
+            .help("Check for Updates")
+
+            Button {
                 viewModel.quit()
             } label: {
                 Image(systemName: "power")

@@ -6,38 +6,42 @@ struct TodayView: View {
 
     var body: some View {
         NavigationSplitView {
-            VStack(alignment: .leading, spacing: 18) {
-                journalHeader
-                dashboardPanel
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    journalHeader
+                    dashboardPanel
 
-                VStack(alignment: .leading, spacing: 10) {
-                    JournalSectionHeader(title: "Day ribbon", detail: Date().formatted(date: .abbreviated, time: .omitted))
-                    DayRibbonView(
-                        entries: viewModel.todayRibbonEntries,
-                        selectedSegmentID: viewModel.selectedSegment?.id,
-                        height: 20,
-                        onSelect: { viewModel.selectSegment(id: $0) }
-                    )
-                    ribbonLegend
-                }
-                .journalSurface()
+                    VStack(alignment: .leading, spacing: 10) {
+                        JournalSectionHeader(title: "Day ribbon", detail: Date().formatted(date: .abbreviated, time: .omitted))
+                        DayRibbonView(
+                            entries: viewModel.todayRibbonEntries,
+                            selectedSegmentID: viewModel.selectedSegment?.id,
+                            height: 20,
+                            onSelect: { viewModel.selectSegment(id: $0) }
+                        )
+                        ribbonLegend
+                    }
+                    .journalSurface()
 
-                if viewModel.todaySegments.isEmpty {
-                    EmptyJournalState(
-                        title: "No activity yet",
-                        message: "Start tracking from the menu bar and your day will appear here.",
-                        systemImage: "clock.badge"
-                    )
-                } else {
-                    timeline
+                    if viewModel.todaySegments.isEmpty {
+                        EmptyJournalState(
+                            title: "No activity yet",
+                            message: "Start tracking from the menu bar and your day will appear here.",
+                            systemImage: "clock.badge"
+                        )
+                    } else {
+                        timeline
+                    }
                 }
+                .padding(22)
+                .frame(minWidth: 760, maxWidth: .infinity, alignment: .leading)
             }
-            .padding(22)
             .background(CalmPalette.porcelain.opacity(0.55))
-            .navigationSplitViewColumnWidth(min: 640, ideal: 780)
+            .navigationSplitViewColumnWidth(min: 760, ideal: 900)
         } detail: {
             SegmentInspector(viewModel: viewModel, segment: viewModel.selectedSegment)
-                .frame(minWidth: 320, maxWidth: 400, maxHeight: .infinity)
+                .frame(maxHeight: .infinity)
+                .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 380)
                 .background(.background)
         }
         .onAppear {
@@ -184,19 +188,17 @@ struct TodayView: View {
     }
 
     private var timeline: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(viewModel.todaySegments.reversed()) { segment in
-                    TimelineSegmentRow(
-                        viewModel: viewModel,
-                        segment: segment,
-                        isSelected: viewModel.selectedSegment?.id == segment.id,
-                        onSelect: { viewModel.selectSegment(id: segment.id) }
-                    )
-                }
+        LazyVStack(spacing: 8) {
+            ForEach(viewModel.todaySegments.reversed()) { segment in
+                TimelineSegmentRow(
+                    viewModel: viewModel,
+                    segment: segment,
+                    isSelected: viewModel.selectedSegment?.id == segment.id,
+                    onSelect: { viewModel.selectSegment(id: segment.id) }
+                )
             }
-            .padding(.bottom, 12)
         }
+        .padding(.bottom, 12)
     }
 }
 
@@ -447,7 +449,7 @@ struct TimelineSegmentRow: View {
     }
 
     private var timeRange: String {
-        "\(segment.start.formatted(date: .omitted, time: .shortened)) - \(segment.end.formatted(date: .omitted, time: .shortened))"
+        "\(segment.start.formatted(.dateTime.hour().minute().second())) - \(segment.end.formatted(.dateTime.hour().minute().second()))"
     }
 
     private var categoryMenu: some View {
@@ -664,6 +666,15 @@ struct SegmentInspector: View {
                     Label("Merge next", systemImage: "arrow.right.to.line.compact")
                 }
                 .disabled(!viewModel.canMergeSelectedSegmentWithNext)
+
+                Spacer(minLength: 0)
+
+                Button(role: .destructive) {
+                    viewModel.deleteSelectedSegment()
+                } label: {
+                    Label("Delete entry", systemImage: "trash")
+                }
+                .disabled(segment.state == .inactive && segment.categoryID == CategoryID.inactive.rawValue)
             }
             .font(.caption)
         }
@@ -673,7 +684,7 @@ struct SegmentInspector: View {
     private func metadata(for segment: ActivitySegment) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             JournalSectionHeader(title: "Details")
-            InspectorRow(label: "Time", value: "\(segment.start.formatted(date: .omitted, time: .shortened)) - \(segment.end.formatted(date: .omitted, time: .shortened))")
+            InspectorRow(label: "Time", value: "\(segment.start.formatted(.dateTime.hour().minute().second())) - \(segment.end.formatted(.dateTime.hour().minute().second()))")
             InspectorRow(label: "Category", value: viewModel.displayName(for: segment.categoryID))
             InspectorRow(label: "Project", value: segment.contextName ?? "None")
             if let bundleID = segment.appBundleID {

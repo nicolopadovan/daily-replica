@@ -3,6 +3,8 @@ import Foundation
 
 @MainActor
 final class TrackingService {
+    private static let ownBundleIDs = Set(["local.daily-replica.app", Bundle.main.bundleIdentifier].compactMap(\.self))
+
     private let store: ActivityStore
     private let state: AppState
     private let sampler: ActivitySampling
@@ -81,6 +83,11 @@ final class TrackingService {
     private func captureFocusedActivity(now: Date) {
         state.accessibilityTrusted = permissionChecker.isAccessibilityTrusted(prompt: false)
         let focus = sampler.sample(now: now, accessibilityTrusted: state.accessibilityTrusted)
+        if focus.appBundleID.map(Self.ownBundleIDs.contains) == true {
+            captureInactiveBoundary(now: now)
+            return
+        }
+
         let result = classifier.classify(focus, rules: state.rules)
         let context = state.currentContext
         let classified = ClassifiedSample(

@@ -30,5 +30,9 @@
     <string>Daily Replica reads the active Chrome tab URL locally so Chrome activity can be categorized by host.</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://nicolopadovan.github.io/daily-replica/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>$(SPARKLE_PUBLIC_ED_KEY)</string>
 </dict>
 </plist>

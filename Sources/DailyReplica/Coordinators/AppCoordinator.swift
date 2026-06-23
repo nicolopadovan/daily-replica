@@ -15,6 +15,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
     private let projectSessionService: ProjectSessionService
     private let dashboardService: DashboardService
     private let privacyService: PrivacyService
+    private let updateService: UpdateService
     private let promptService: PromptService
     private let promptPanelCoordinator: PromptPanelCoordinator
     private var openWindow: ((String) -> Void)?
@@ -43,6 +44,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
                 state: state,
                 contextPersistence: contextPersistence
             )
+            let updateService = UpdateService()
             let promptService = PromptService(state: state, libraryService: libraryService)
             let trackingService = TrackingService(
                 store: store,
@@ -60,13 +62,15 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
             self.projectSessionService = projectSessionService
             self.dashboardService = dashboardService
             self.privacyService = privacyService
+            self.updateService = updateService
             self.promptService = promptService
             self.promptPanelCoordinator = promptPanelCoordinator
             self.menuBarViewModel = MenuBarViewModel(
                 state: state,
                 trackingService: trackingService,
                 libraryService: libraryService,
-                projectSessionService: projectSessionService
+                projectSessionService: projectSessionService,
+                updateService: updateService
             )
             self.todayViewModel = TodayViewModel(
                 state: state,

@@ -134,6 +134,47 @@ final class SegmentEditingServiceTests: XCTestCase {
         XCTAssertEqual(harness.store.upsertedSegments.last?.contextName, "Client")
     }
 
+    func testMarkInactiveClearsEntryDetailsAndPersistsSameSegment() {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode",
+            windowTitle: "Daily Replica",
+            urlString: "https://example.com",
+            urlHost: "example.com",
+            categoryID: CategoryID.work.rawValue,
+            contextID: context.id,
+            contextName: context.name,
+            manualCategoryID: CategoryID.work.rawValue,
+            manualContextID: context.id,
+            manualNote: "wrong"
+        )
+        harness.state.todaySegments = [segment]
+
+        harness.segmentEditingService.markInactive(segmentID: segment.id)
+
+        let updated = harness.state.todaySegments.first
+        XCTAssertEqual(updated?.id, segment.id)
+        XCTAssertEqual(updated?.start, segment.start)
+        XCTAssertEqual(updated?.end, segment.end)
+        XCTAssertEqual(updated?.state, .inactive)
+        XCTAssertEqual(updated?.categoryID, CategoryID.inactive.rawValue)
+        XCTAssertNil(updated?.appBundleID)
+        XCTAssertNil(updated?.appName)
+        XCTAssertNil(updated?.windowTitle)
+        XCTAssertNil(updated?.urlString)
+        XCTAssertNil(updated?.urlHost)
+        XCTAssertNil(updated?.contextID)
+        XCTAssertNil(updated?.contextName)
+        XCTAssertFalse(updated?.hasManualOverride ?? true)
+        XCTAssertEqual(harness.store.upsertedSegments.last?.id, segment.id)
+        XCTAssertEqual(harness.store.upsertedSegments.last?.state, .inactive)
+    }
+
     func testSplitsSegmentAndPersistsBothHalves() {
         let harness = AppHarness()
         let start = Date(timeIntervalSince1970: 100)
@@ -448,6 +489,31 @@ final class TrackingServiceTests: XCTestCase {
         XCTAssertEqual(harness.state.todaySegments[0].end, Date(timeIntervalSince1970: 105))
     }
 
+    func testOwnAppSampleCreatesInactiveBoundary() {
+        let harness = AppHarness()
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 100),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode"
+        )
+
+        harness.trackingService.handleEvent(.heartbeat, now: Date(timeIntervalSince1970: 100))
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 105),
+            state: .active,
+            appBundleID: "local.daily-replica.app",
+            appName: "Daily Replica"
+        )
+        harness.trackingService.handleEvent(.appActivated, now: Date(timeIntervalSince1970: 105))
+
+        XCTAssertEqual(harness.state.todaySegments.count, 2)
+        XCTAssertEqual(harness.state.todaySegments[0].appName, "Xcode")
+        XCTAssertEqual(harness.state.todaySegments[1].state, .inactive)
+        XCTAssertNil(harness.state.todaySegments[1].appBundleID)
+        XCTAssertEqual(harness.state.todaySegments[1].categoryID, CategoryID.inactive.rawValue)
+    }
+
     func testSessionResignEventCreatesInactiveBoundary() {
         let harness = AppHarness()
         harness.sampler.sample = FocusSample(
@@ -656,6 +722,32 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedSegmentID, selected.id)
         XCTAssertEqual(viewModel.selectedSegment?.start, previous.start)
         XCTAssertEqual(viewModel.selectedSegment?.end, selected.end)
+    }
+
+    func testTodayViewModelDeleteSelectedSegmentMarksItInactive() {
+        let harness = AppHarness()
+        let segment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 100),
+            end: Date(timeIntervalSince1970: 160),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.todaySegments = [segment]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+        viewModel.selectSegment(id: segment.id)
+
+        viewModel.deleteSelectedSegment()
+
+        XCTAssertEqual(viewModel.selectedSegmentID, segment.id)
+        XCTAssertEqual(viewModel.selectedSegment?.state, .inactive)
+        XCTAssertEqual(viewModel.selectedSegment?.categoryID, CategoryID.inactive.rawValue)
+        XCTAssertNil(viewModel.selectedSegment?.appName)
     }
 
     func testMenuViewModelCreateProjectStartsProjectSession() {

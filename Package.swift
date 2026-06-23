@@ -17,6 +17,9 @@ let package = Package(
             targets: ["DailyReplica"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0")
+    ],
     targets: [
         .target(
             name: "DailyReplicaCore",
@@ -26,7 +29,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "DailyReplica",
-            dependencies: ["DailyReplicaCore"],
+            dependencies: [
+                "DailyReplicaCore",
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
             exclude: ["Resources/Info.plist"],
             linkerSettings: [
                 .linkedLibrary("sqlite3")

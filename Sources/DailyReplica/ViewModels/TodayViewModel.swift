@@ -171,6 +171,15 @@ final class TodayViewModel: ObservableObject {
         dashboardService.reload()
     }
 
+    func deleteSelectedSegment() {
+        guard let segmentID = selectedSegment?.id else {
+            return
+        }
+        segmentEditingService.markInactive(segmentID: segmentID)
+        resetSplitTime(for: selectedSegment)
+        dashboardService.reload()
+    }
+
     @discardableResult
     func createCategory(name: String) -> CategoryDefinition? {
         libraryService.addCategory(name: name)

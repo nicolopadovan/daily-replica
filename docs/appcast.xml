@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>DailyReplica</title>
+        <item>
+            <title>0.1.1</title>
+            <pubDate>Tue, 23 Jun 2026 22:06:10 +0200</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/nicolopadovan/daily-replica/releases/download/v0.1.1/DailyReplica-0.1.1-macos-arm64.zip" length="1489002" type="application/octet-stream" sparkle:edSignature="Jrwa6UG3pIw3+V4j9mME7KF/PNcukabQ41nPAChQ7/JvwtFYxxFD66eCT1OB5mmQxD1ulGcBd+zasHFH2lwkDw=="/>
+        </item>
+    </channel>
+</rss>

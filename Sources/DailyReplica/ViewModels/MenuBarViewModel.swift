@@ -14,19 +14,26 @@ final class MenuBarViewModel: ObservableObject {
     private let trackingService: TrackingService
     private let libraryService: LibraryService
     private let projectSessionService: ProjectSessionService
+    private let updateService: UpdateService?
     private var stateCancellable: AnyCancellable?
+    private var updateCancellable: AnyCancellable?
 
     init(
         state: AppState,
         trackingService: TrackingService,
         libraryService: LibraryService,
-        projectSessionService: ProjectSessionService
+        projectSessionService: ProjectSessionService,
+        updateService: UpdateService? = nil
     ) {
         self.state = state
         self.trackingService = trackingService
         self.libraryService = libraryService
         self.projectSessionService = projectSessionService
+        self.updateService = updateService
         stateCancellable = state.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        updateCancellable = updateService?.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
     }
@@ -39,6 +46,7 @@ final class MenuBarViewModel: ObservableObject {
     var lastError: String? { state.lastError }
     var lastSampleDescription: String { state.lastSampleDescription }
     var accessibilityTrusted: Bool { state.accessibilityTrusted }
+    var canCheckForUpdates: Bool { updateService?.canCheckForUpdates ?? false }
     var todaySummary: ActivityDaySummary { state.todaySummary }
     var todayRibbonEntries: [ActivityRibbonEntry] { state.todayRibbonEntries }
     var currentProjectElapsed: String {
@@ -127,6 +135,10 @@ final class MenuBarViewModel: ObservableObject {
 
     func openSettings() {
         coordinator?.openSettings()
+    }
+
+    func checkForUpdates() {
+        updateService?.checkForUpdates()
     }
 
     func quit() {

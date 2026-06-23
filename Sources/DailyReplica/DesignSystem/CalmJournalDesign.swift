@@ -3,15 +3,15 @@ import DailyReplicaCore
 import SwiftUI
 
 enum CalmPalette {
-    static let porcelain = Color(hex: 0xF7F8FA)
-    static let ink = Color(hex: 0x1E242B)
-    static let graphite = Color(hex: 0x4B5563)
-    static let mist = Color(hex: 0xE7EBF0)
-    static let cypress = Color(hex: 0x16846F)
-    static let signalBlue = Color(hex: 0x3B82F6)
-    static let persimmon = Color(hex: 0xD97706)
-    static let iris = Color(hex: 0x6D5DD3)
-    static let rose = Color(hex: 0xD64A72)
+    static let porcelain = Color(nsColor: .windowBackgroundColor)
+    static let ink = Color(nsColor: .labelColor)
+    static let graphite = Color(hex: 0x5F6875)
+    static let mist = Color(hex: 0xE5E8EC)
+    static let cypress = Color(hex: 0x2F6F63)
+    static let signalBlue = Color(hex: 0x476F9D)
+    static let persimmon = Color(hex: 0x9A6A2F)
+    static let iris = Color(hex: 0x6D649B)
+    static let rose = Color(hex: 0x9E5668)
 
     static func categoryColor(_ categoryID: String) -> Color {
         switch categoryID {

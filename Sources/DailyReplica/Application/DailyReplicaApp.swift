@@ -16,7 +16,7 @@ struct DailyReplicaApp: App {
         Window("Today", id: "today") {
             TodayView(viewModel: coordinator.todayViewModel)
                 .bindWindowActions(to: coordinator)
-                .frame(minWidth: 900, minHeight: 620)
+                .frame(minWidth: 1080, minHeight: 620)
         }
 
         Window("Settings", id: "settings") {

@@ -5,6 +5,7 @@ DerivedData/
 DailyReplica.app/
 *.xcuserstate
 *.xcuserdata/
+*.xcuserdatad/
 *.sqlite
 *.sqlite3
 *.sqlite-shm
