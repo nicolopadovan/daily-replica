@@ -1,137 +1,82 @@
-# Daily Replica
+<div align="center">
 
-Daily Replica is a local-only macOS menu-bar activity tracker inspired by Daily.
-It combines a manual project/context selector with automatic tracking for the
-frontmost app, focused window title, active Chrome URL, activity category, and
-idle time.
+# 🌤️ Daily Replica
 
-The project is an early proof of concept. It is usable for local tracking, but
-the data model and release process may still change.
+A tiny macOS menu bar app for remembering what your day looked like.
 
-## Features
+[![Release](https://img.shields.io/github/v/release/nicolopadovan/daily-replica?label=release)](https://github.com/nicolopadovan/daily-replica/releases)
+![macOS](https://img.shields.io/badge/macOS-14%2B-black)
+![Swift](https://img.shields.io/badge/Swift-6-orange)
+![License](https://img.shields.io/badge/license-TBD-lightgrey)
 
-- Menu-bar tracker for starting, stopping, and switching project context.
-- Automatic frontmost-app tracking through `NSWorkspace`.
-- Idle detection after 30 seconds without keyboard or mouse input.
-- Focused window titles when Accessibility permission is granted.
-- Active Google Chrome tab URL capture when macOS Automation permission is granted.
-- App bundle and Chrome host classification rules.
-- Local timeline view with category/context corrections.
-- Smart prompts for long-running unclassified activity and category/context mismatches.
-- SQLite storage on the local machine only.
+</div>
 
-## Install
+Daily Replica sits in your menu bar and gives you a lightweight timeline of your
+workday. Pick what you are working on, let the app quietly follow along, and
+clean things up later when the day gets messy.
 
-Download the latest macOS app archive from
+## ✨ Features
+
+- 🕘 Track your day from the menu bar
+- 🗂️ Switch between projects and contexts
+- 🎨 Organize time into simple categories
+- 🧾 Review a clean timeline of your day
+- ✏️ Fix anything that was categorized wrong
+- 🔒 Designed to stay local to your Mac
+
+## 📦 Installation
+
+Download the latest version from
 [GitHub Releases](https://github.com/nicolopadovan/daily-replica/releases).
 
-1. Download `DailyReplica-*-macos-arm64.zip`.
-2. Unzip it and move `DailyReplica.app` to `/Applications`.
-3. Open the app from Finder.
-4. Grant Accessibility permission if you want focused window titles.
-5. Grant Chrome Automation permission if you want active Chrome tab URLs.
+1. Download `DailyReplica-*-macos-arm64.zip`
+2. Unzip it
+3. Move `DailyReplica.app` to your `Applications` folder
+4. Open it and start tracking
 
-Official release archives are Developer ID signed by Nicolò Padovan
-(`532NRWLQ2D`) when a signing identity is available. The current binary release
-is not notarized, so macOS may ask for approval in System Settings > Privacy &
-Security the first time it is opened.
+If macOS blocks the first launch, open **System Settings → Privacy & Security**
+and allow Daily Replica from there.
 
-## Data And Privacy
+## 🧭 Usage
 
-Daily Replica does not sync or upload activity data. The local database lives at:
+1. Open Daily Replica
+2. Start tracking from the menu bar
+3. Pick what you are working on
+4. Check your timeline when you want a recap
+5. Adjust categories when needed
 
-```text
-~/Library/Application Support/DailyReplica/activity.sqlite
-```
-
-Tracked data can include app names, bundle IDs, focused window titles, Chrome
-URLs, categories, project contexts, and manual notes. Keep that database private
-if those details are sensitive.
-
-## Requirements
-
-- macOS 14 or newer
-- Xcode or the Xcode Command Line Tools with Swift 6 support
-- Google Chrome for URL-based website rules
-
-An Apple Developer account is not required for local development. It is only
-needed to produce Developer ID signed or notarized release artifacts.
-
-## Build From Source
-
-Run the tests:
+## 🛠️ Build From Source
 
 ```bash
 swift test
-```
-
-Build a local app bundle:
-
-```bash
 bash Scripts/build-app.sh release
 ```
 
-The app bundle is created at:
+The app will be created at:
 
 ```text
 .build/DailyReplica.app
 ```
 
-To build a signed release bundle:
+## ❓ FAQ
 
-```bash
-DAILY_REPLICA_VERSION=0.1.1 \
-DAILY_REPLICA_BUILD_NUMBER=2 \
-DAILY_REPLICA_CODE_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-DAILY_REPLICA_CODE_SIGN_TEAM_ID="TEAMID" \
-bash Scripts/build-app.sh release
-```
+### Is this production ready?
 
-Maintainer releases use:
+Not yet. Daily Replica is still an early app, but it is ready enough to try.
 
-```bash
-DAILY_REPLICA_CODE_SIGN_IDENTITY="Developer ID Application: Nicolò Padovan (532NRWLQ2D)" \
-DAILY_REPLICA_CODE_SIGN_TEAM_ID="532NRWLQ2D"
-```
+### Does it work offline?
 
-## Usage
+Yes. Daily Replica is designed as a local macOS app.
 
-1. Launch `DailyReplica.app`.
-2. Use the menu-bar item to start tracking.
-3. Select or create the current project/context.
-4. Open Today to inspect timeline segments and correct categories or contexts.
-5. Open Settings to add categories, project contexts, app bundle rules, and
-   Chrome host rules.
+### Is there a Homebrew install?
 
-## Smart Prompts
+Not yet. For now, use the release zip.
 
-Daily Replica shows a small floating prompt when:
+## 🙌 Contributing
 
-- an app or Chrome host remains unclassified for 2 active minutes
-- a focused activity category conflicts with the current context's default
-  category for 5 active minutes
+Issues and pull requests are welcome. If something feels confusing, broken, or
+missing, open an issue first so it can be discussed.
 
-Unclassified prompts can create future classification rules. Timeline
-corrections only edit the selected segment.
+## 📄 License
 
-## Project Layout
-
-```text
-Sources/DailyReplica/       macOS app and SwiftUI views
-Sources/DailyReplicaCore/   tracking models, classification, SQLite storage
-Tests/DailyReplicaCoreTests core unit tests
-Scripts/build-app.sh        local app bundle builder
-```
-
-## Contributing
-
-Issues and pull requests are welcome. Before opening a pull request, run:
-
-```bash
-swift test
-```
-
-## License
-
-No license has been selected yet. Until one is added, this repository is source
-available but not broadly reusable as open source.
+No license has been selected yet.
