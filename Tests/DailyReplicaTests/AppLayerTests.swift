@@ -4,6 +4,39 @@ import XCTest
 
 @MainActor
 final class LibraryServiceTests: XCTestCase {
+    func testRefreshAccessibilityTrustReadsLatestSystemState() {
+        let harness = AppHarness()
+        let checker = harness.permissionChecker
+        checker.isTrusted = false
+
+        harness.libraryService.refreshAccessibilityTrust(prompt: false)
+        XCTAssertFalse(harness.state.accessibilityTrusted)
+
+        checker.isTrusted = true
+        harness.libraryService.refreshAccessibilityTrust(prompt: false)
+        XCTAssertTrue(harness.state.accessibilityTrusted)
+    }
+
+    func testRefreshAccessibilityTrustUsesObservedWindowTitleCapability() {
+        let harness = AppHarness()
+        harness.permissionChecker.isTrusted = false
+        harness.state.todaySegments = [
+            ActivitySegment(
+                start: Date(timeIntervalSince1970: 100),
+                end: Date(timeIntervalSince1970: 160),
+                state: .active,
+                appBundleID: "com.apple.dt.Xcode",
+                appName: "Xcode",
+                windowTitle: "Daily Replica",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+
+        harness.libraryService.refreshAccessibilityTrust(prompt: false)
+
+        XCTAssertTrue(harness.state.accessibilityTrusted)
+    }
+
     func testAddCategoryTrimsRejectsEmptyAndSorts() {
         let harness = AppHarness()
 
@@ -837,6 +870,84 @@ final class TrackingServiceTests: XCTestCase {
         XCTAssertFalse(harness.eventObserver.isStarted)
         XCTAssertNil(harness.eventObserver.onEvent)
     }
+
+    func testCaptureTickRefreshesAccessibilityTrustState() {
+        let harness = AppHarness()
+        let checker = harness.permissionChecker
+        checker.isTrusted = false
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 100),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode"
+        )
+
+        harness.trackingService.captureTick(now: Date(timeIntervalSince1970: 100))
+        XCTAssertFalse(harness.state.accessibilityTrusted)
+
+        checker.isTrusted = true
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 160),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode"
+        )
+        harness.trackingService.captureTick(now: Date(timeIntervalSince1970: 160))
+        XCTAssertTrue(harness.state.accessibilityTrusted)
+        XCTAssertEqual(harness.state.todaySegments.count, 1)
+    }
+
+    func testCaptureTickMarksAccessibilityTrustedWhenWindowTitleWasCaptured() {
+        let harness = AppHarness()
+        harness.permissionChecker.isTrusted = false
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 100),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode",
+            windowTitle: "Daily Replica"
+        )
+
+        harness.trackingService.captureTick(now: Date(timeIntervalSince1970: 100))
+
+        XCTAssertTrue(harness.state.accessibilityTrusted)
+        XCTAssertEqual(harness.state.todaySegments.first?.windowTitle, "Daily Replica")
+    }
+
+    func testStopTrackingAddsInactiveSegmentAndPreventsResumingWithPreviousActiveSpan() {
+        let harness = AppHarness()
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 100),
+            state: .active,
+            appBundleID: "com.apple.dt.Xcode",
+            appName: "Xcode"
+        )
+
+        harness.trackingService.captureTick(now: Date(timeIntervalSince1970: 100))
+        harness.state.isTracking = true
+        harness.trackingService.stopTracking(now: Date(timeIntervalSince1970: 160))
+
+        XCTAssertEqual(harness.state.todaySegments.count, 2)
+        XCTAssertEqual(harness.state.todaySegments[0].state, .active)
+        XCTAssertEqual(harness.state.todaySegments[0].end, Date(timeIntervalSince1970: 160))
+        XCTAssertEqual(harness.state.todaySegments[1].state, .inactive)
+        XCTAssertEqual(harness.state.todaySegments[1].start, Date(timeIntervalSince1970: 160))
+        XCTAssertEqual(harness.state.todaySegments[1].end, Date(timeIntervalSince1970: 160))
+
+        harness.sampler.sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 220),
+            state: .active,
+            appBundleID: "com.apple.Safari",
+            appName: "Safari"
+        )
+        harness.trackingService.captureTick(now: Date(timeIntervalSince1970: 220))
+
+        XCTAssertEqual(harness.state.todaySegments.count, 3)
+        XCTAssertEqual(harness.state.todaySegments[1].state, .inactive)
+        XCTAssertEqual(harness.state.todaySegments[1].end, Date(timeIntervalSince1970: 220))
+        XCTAssertEqual(harness.state.todaySegments[2].state, .active)
+        XCTAssertEqual(harness.state.todaySegments[2].appName, "Safari")
+    }
 }
 
 @MainActor
@@ -919,6 +1030,25 @@ final class ViewModelTests: XCTestCase {
         viewModel.toggleTracking()
         XCTAssertFalse(harness.state.isTracking)
         XCTAssertNotNil(harness.state.todayProjectSessions.first?.end)
+    }
+
+    func testMenuViewModelRequestAccessibilityPermissionRefreshesState() {
+        let harness = AppHarness()
+        let checker = harness.permissionChecker
+        checker.isTrusted = false
+        let viewModel = MenuBarViewModel(
+            state: harness.state,
+            trackingService: harness.trackingService,
+            libraryService: harness.libraryService,
+            projectSessionService: harness.projectSessionService
+        )
+
+        viewModel.requestAccessibilityPermission()
+        XCTAssertFalse(harness.state.accessibilityTrusted)
+
+        checker.isTrusted = true
+        viewModel.requestAccessibilityPermission()
+        XCTAssertTrue(harness.state.accessibilityTrusted)
     }
 
     func testTodayViewModelOpenAnalyticsDelegatesToCoordinator() {
@@ -1087,6 +1217,114 @@ final class ViewModelTests: XCTestCase {
 
         XCTAssertEqual(harness.state.rules.first?.pattern, "com.example.Editor")
         XCTAssertEqual(Set(harness.state.todaySegments.map(\.categoryID)), [CategoryID.work.rawValue])
+    }
+
+    func testTodayViewModelPromptsForChromeAutoSortByHost() {
+        let harness = AppHarness()
+        let gmail = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appBundleID: "com.google.Chrome",
+            appName: "Google Chrome",
+            urlHost: "mail.google.com",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let gitHub = ActivitySegment(
+            start: Date(timeIntervalSince1970: 20),
+            end: Date(timeIntervalSince1970: 30),
+            state: .active,
+            appBundleID: "com.google.Chrome",
+            appName: "Google Chrome",
+            urlHost: "github.com",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [gmail, gitHub]
+        harness.store.segments = [gmail, gitHub]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.editSegmentCategory(segmentID: gmail.id, categoryID: CategoryID.work.rawValue)
+
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.kind, .chromeHost)
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.pattern, "mail.google.com")
+
+        viewModel.confirmPendingAutoSortRule()
+
+        let categoriesByHost = Dictionary(uniqueKeysWithValues: harness.state.todaySegments.map { ($0.urlHost ?? "", $0.categoryID) })
+        XCTAssertEqual(categoriesByHost["mail.google.com"], CategoryID.work.rawValue)
+        XCTAssertEqual(categoriesByHost["github.com"], CategoryID.unclassified.rawValue)
+    }
+
+    func testTodayViewModelPromptsForSafariAutoSortByHost() {
+        let harness = AppHarness()
+        let safariSegment = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appBundleID: "com.apple.Safari",
+            appName: "Safari",
+            urlHost: "news.ycombinator.com",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [safariSegment]
+        harness.store.segments = [safariSegment]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.editSegmentCategory(segmentID: safariSegment.id, categoryID: CategoryID.work.rawValue)
+
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.kind, .chromeHost)
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.pattern, "news.ycombinator.com")
+
+        viewModel.confirmPendingAutoSortRule()
+
+        XCTAssertEqual(harness.state.todaySegments.first?.categoryID, CategoryID.work.rawValue)
+    }
+
+    func testTodayViewModelShowsDefaultAutoSortRulesOnFirstLaunch() {
+        let harness = AppHarness()
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.showDefaultAutoSortRulesIfNeeded()
+
+        let requests = viewModel.pendingAutoSortBatch?.requests ?? []
+        XCTAssertFalse(requests.isEmpty)
+        XCTAssertTrue(requests.contains(where: { $0.pattern == "canva.com" && $0.kind == .chromeHost }))
+        XCTAssertTrue(requests.contains(where: { $0.pattern == "claude.ai" && $0.kind == .chromeHost }))
+        XCTAssertTrue(requests.contains(where: { $0.pattern == "atlassian.net" && $0.kind == .chromeHost }))
+        XCTAssertTrue(viewModel.pendingAutoSortIsRetroactive)
+    }
+
+    func testTodayViewModelSkipsDefaultAutoSortRulesWhenRulesExist() {
+        let harness = AppHarness()
+        harness.state.rules = [
+            ClassificationRule(kind: .chromeHost, pattern: "example.com", categoryID: CategoryID.work.rawValue)
+        ]
+        harness.store.rules = harness.state.rules
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.showDefaultAutoSortRulesIfNeeded()
+
+        XCTAssertNil(viewModel.pendingAutoSortBatch)
     }
 
     func testTodayViewModelBulkEditPromptsForMultipleAutoSortRules() {
@@ -1472,7 +1710,7 @@ final class ViewModelTests: XCTestCase {
 }
 
 @MainActor
-private final class AppHarness {
+final class AppHarness {
     let state = AppState()
     let store = InMemoryActivityStore()
     let contextPersistence = TestCurrentContextPersistence()
@@ -1522,7 +1760,7 @@ private final class AppHarness {
     }
 }
 
-private final class InMemoryActivityStore: ActivityStore {
+final class InMemoryActivityStore: ActivityStore {
     var categories: [CategoryDefinition] = []
     var contexts: [ProjectContext] = []
     var rules: [ClassificationRule] = []
@@ -1613,7 +1851,7 @@ private final class InMemoryActivityStore: ActivityStore {
     }
 }
 
-private final class TestCurrentContextPersistence: CurrentContextPersisting {
+final class TestCurrentContextPersistence: CurrentContextPersisting {
     var savedID: UUID?
 
     func loadCurrentContextID() -> UUID? {
@@ -1625,15 +1863,15 @@ private final class TestCurrentContextPersistence: CurrentContextPersisting {
     }
 }
 
-private struct TestPermissionChecker: PermissionChecking {
-    var trusted = true
+final class TestPermissionChecker: PermissionChecking {
+    var isTrusted = true
 
     func isAccessibilityTrusted(prompt: Bool) -> Bool {
-        trusted
+        isTrusted
     }
 }
 
-private final class TestSampler: ActivitySampling {
+final class TestSampler: ActivitySampling {
     var sample = FocusSample(
         timestamp: Date(timeIntervalSince1970: 0),
         state: .active,
@@ -1649,7 +1887,7 @@ private final class TestSampler: ActivitySampling {
 }
 
 @MainActor
-private final class TestActivityEventObserver: ActivityEventObserving {
+final class TestActivityEventObserver: ActivityEventObserving {
     var onEvent: ((TrackingEvent) -> Void)?
     var isStarted = false
 
@@ -1662,7 +1900,7 @@ private final class TestActivityEventObserver: ActivityEventObserving {
     }
 }
 
-private final class TestAppCoordinatorSpy: AppCoordinating {
+final class TestAppCoordinatorSpy: AppCoordinating {
     var didOpenToday = false
     var didOpenAnalytics = false
     var didOpenSettings = false
@@ -1697,7 +1935,7 @@ private final class TestAppCoordinatorSpy: AppCoordinating {
 }
 
 @MainActor
-private final class TestPromptPresenter: PromptPresenting {
+final class TestPromptPresenter: PromptPresenting {
     var shownPrompt: SmartPrompt?
     var didDismiss = false
 

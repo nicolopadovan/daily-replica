@@ -62,6 +62,9 @@ final class TodayViewModel: ObservableObject {
     var currentContextName: String { state.currentContext?.name ?? "No current project" }
     var isTracking: Bool { state.isTracking }
     var categories: [CategoryDefinition] { state.categories }
+    var assignableCategories: [CategoryDefinition] {
+        state.categories.filter { $0.id != CategoryID.inactive.rawValue }
+    }
     var contexts: [ProjectContext] { state.contexts }
     var activeProjectSession: ProjectSession? { state.activeProjectSession }
     var activeProjectElapsed: String {
@@ -204,16 +207,37 @@ final class TodayViewModel: ObservableObject {
         queueAutoSortPromptIfNeeded(for: originals, categoryID: categoryID)
     }
 
-    func confirmPendingAutoSortRule() {
+    @discardableResult
+    func showDefaultAutoSortRulesIfNeeded() -> Bool {
+        guard pendingAutoSortBatch == nil else {
+            return false
+        }
+        let missingSuggestions = Self.defaultAutoSortSuggestions.filter {
+            libraryService.existingRule(kind: $0.kind, pattern: $0.pattern) == nil
+        }
+        guard !missingSuggestions.isEmpty else {
+            return true
+        }
+        pendingAutoSortBatch = AutoSortRuleBatch(requests: missingSuggestions)
+        pendingAutoSortIsRetroactive = true
+        return true
+    }
+
+    func confirmPendingAutoSortRule(
+        requests: [AutoSortRuleRequest]? = nil,
+        retroactive: Bool? = nil
+    ) {
         guard let pendingAutoSortBatch else {
             return
         }
-        for request in pendingAutoSortBatch.requests {
+        let selectedRequests = requests ?? pendingAutoSortBatch.requests
+        let shouldApplyRetroactively = retroactive ?? pendingAutoSortIsRetroactive
+        for request in selectedRequests where request.isEnabled {
             libraryService.addRule(
                 kind: request.kind,
                 pattern: request.pattern,
                 categoryID: request.categoryID,
-                retroactive: pendingAutoSortIsRetroactive
+                retroactive: shouldApplyRetroactively
             )
         }
         self.pendingAutoSortBatch = nil
@@ -385,6 +409,9 @@ final class TodayViewModel: ObservableObject {
     }
 
     private func autoSortTarget(for segment: ActivitySegment) -> (kind: ClassificationRuleKind, pattern: String, title: String)? {
+        if let host = segment.urlHost ?? segment.urlString.flatMap({ URL(string: $0)?.host?.lowercased() }), !host.isEmpty {
+            return (.chromeHost, host, host)
+        }
         if let bundleID = segment.appBundleID, !bundleID.isEmpty {
             return (.appBundleID, bundleID, segment.appName ?? bundleID)
         }
@@ -393,4 +420,103 @@ final class TodayViewModel: ObservableObject {
         }
         return nil
     }
+
+    private static let defaultAutoSortSuggestions: [AutoSortRuleRequest] = [
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "chatgpt.com",
+            categoryID: CategoryID.work.rawValue,
+            title: "ChatGPT / Codex"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "claude.ai",
+            categoryID: CategoryID.work.rawValue,
+            title: "Claude"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "canva.com",
+            categoryID: CategoryID.work.rawValue,
+            title: "Canva"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "chat.openai.com",
+            categoryID: CategoryID.work.rawValue,
+            title: "OpenAI / Codex"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "slack.com",
+            categoryID: CategoryID.communication.rawValue,
+            title: "Slack"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "web.whatsapp.com",
+            categoryID: CategoryID.communication.rawValue,
+            title: "WhatsApp"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "whatsapp.com",
+            categoryID: CategoryID.communication.rawValue,
+            title: "WhatsApp"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "atlassian.net",
+            categoryID: CategoryID.work.rawValue,
+            title: "Jira"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "music.apple.com",
+            categoryID: CategoryID.media.rawValue,
+            title: "Apple Music"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "music.youtube.com",
+            categoryID: CategoryID.media.rawValue,
+            title: "YouTube Music"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "netflix.com",
+            categoryID: CategoryID.media.rawValue,
+            title: "Netflix"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "youtube.com",
+            categoryID: CategoryID.media.rawValue,
+            title: "YouTube"
+        ),
+        AutoSortRuleRequest(
+            kind: .chromeHost,
+            pattern: "instagram.com",
+            categoryID: CategoryID.browsing.rawValue,
+            title: "Instagram"
+        ),
+        AutoSortRuleRequest(
+            kind: .appBundleID,
+            pattern: "com.tinyspeck.slackmacgap",
+            categoryID: CategoryID.communication.rawValue,
+            title: "Slack app"
+        ),
+        AutoSortRuleRequest(
+            kind: .appBundleID,
+            pattern: "com.spotify.client",
+            categoryID: CategoryID.media.rawValue,
+            title: "Spotify"
+        ),
+        AutoSortRuleRequest(
+            kind: .appBundleID,
+            pattern: "com.apple.Music",
+            categoryID: CategoryID.media.rawValue,
+            title: "Apple Music app"
+        )
+    ]
 }

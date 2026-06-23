@@ -63,10 +63,13 @@ struct TodayView: View {
         .sheet(item: $viewModel.pendingAutoSortBatch) { batch in
             AutoSortRuleConfirmationSheet(
                 batch: batch,
+                categories: viewModel.assignableCategories,
                 categoryName: { viewModel.displayName(for: $0) },
                 isRetroactive: $viewModel.pendingAutoSortIsRetroactive,
                 onCancel: { viewModel.cancelPendingAutoSortRule() },
-                onConfirm: { viewModel.confirmPendingAutoSortRule() }
+                onConfirm: { requests, retroactive in
+                    viewModel.confirmPendingAutoSortRule(requests: requests, retroactive: retroactive)
+                }
             )
         }
     }
@@ -468,6 +471,12 @@ struct TimelineSegmentRow: View {
                         Text(primaryTitle)
                             .font(.system(size: 15, weight: .semibold))
                             .lineLimit(1)
+                        if let windowTitle = segment.windowTitle, !windowTitle.isEmpty {
+                            Text(windowTitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                         Text(timeRange)
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
@@ -518,12 +527,6 @@ struct TimelineSegmentRow: View {
     }
 
     private var detailText: String? {
-        if let windowTitle = segment.windowTitle, !windowTitle.isEmpty {
-            if let host = segment.urlHost {
-                return "\(windowTitle) · \(host)"
-            }
-            return windowTitle
-        }
         return segment.urlHost
     }
 
@@ -575,10 +578,30 @@ struct TimelineSegmentRow: View {
 
 struct AutoSortRuleConfirmationSheet: View {
     let batch: AutoSortRuleBatch
+    let categories: [CategoryDefinition]
     let categoryName: (String) -> String
     @Binding var isRetroactive: Bool
     let onCancel: () -> Void
-    let onConfirm: () -> Void
+    let onConfirm: ([AutoSortRuleRequest], Bool) -> Void
+
+    @State private var draftRequests: [AutoSortRuleRequest]
+
+    init(
+        batch: AutoSortRuleBatch,
+        categories: [CategoryDefinition],
+        categoryName: @escaping (String) -> String,
+        isRetroactive: Binding<Bool>,
+        onCancel: @escaping () -> Void,
+        onConfirm: @escaping ([AutoSortRuleRequest], Bool) -> Void
+    ) {
+        self.batch = batch
+        self.categories = categories
+        self.categoryName = categoryName
+        _isRetroactive = isRetroactive
+        self.onCancel = onCancel
+        self.onConfirm = onConfirm
+        _draftRequests = State(initialValue: batch.requests)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -586,30 +609,45 @@ struct AutoSortRuleConfirmationSheet: View {
                 .font(.title3.bold())
             Text(message)
                 .foregroundStyle(.secondary)
-            if batch.requests.count > 1 {
+
+            ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(batch.requests) { request in
-                        HStack {
-                            Text(request.title)
-                                .lineLimit(1)
+                    ForEach($draftRequests) { $request in
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Toggle(isOn: $request.isEnabled) {
+                                Text(request.title)
+                                    .lineLimit(1)
+                            }
+
                             Spacer()
-                            Text(categoryName(request.categoryID))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+
+                            Picker("Category", selection: $request.categoryID) {
+                                ForEach(categories) { category in
+                                    Text(category.name)
+                                        .tag(category.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .frame(width: 170)
+                            .disabled(!request.isEnabled)
                         }
                     }
+                    .font(.subheadline)
+                    .padding(10)
+                    .background(CalmPalette.mist.opacity(0.35), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
-                .font(.subheadline)
-                .padding(10)
-                .background(CalmPalette.mist.opacity(0.35), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             Toggle("Apply to past unclassified entries", isOn: $isRetroactive)
             HStack {
                 Spacer()
                 Button("Cancel", action: onCancel)
-                Button(confirmTitle, action: onConfirm)
+                Button(confirmTitle) {
+                    onConfirm(draftRequests.filter(\.isEnabled), isRetroactive)
+                }
                     .buttonStyle(.borderedProminent)
                     .tint(CalmPalette.cypress)
+                    .disabled(enabledRequestCount == 0)
             }
         }
         .padding(22)
@@ -632,6 +670,10 @@ struct AutoSortRuleConfirmationSheet: View {
 
     private var confirmTitle: String {
         batch.requests.count == 1 ? "Create rule" : "Create rules"
+    }
+
+    private var enabledRequestCount: Int {
+        draftRequests.filter(\.isEnabled).count
     }
 }
 

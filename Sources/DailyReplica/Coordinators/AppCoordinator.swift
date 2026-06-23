@@ -54,6 +54,8 @@ enum AppSection: String, CaseIterable, Identifiable {
 
 @MainActor
 final class AppCoordinator: ObservableObject, AppCoordinating {
+    private static let hasSeenDefaultAutoSortPromptKey = "hasSeenDefaultAutoSortPrompt"
+
     @Published var selectedSection = AppSection.today
 
     let state: AppState
@@ -160,9 +162,18 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
             stateCancellable = state.objectWillChange.sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
+            #if DEBUG
+            openMainWindowInDebugOnLaunch()
+            #endif
+            libraryService.refreshAccessibilityTrust(prompt: false)
             libraryService.loadState()
             projectSessionService.loadState()
             dashboardService.reload()
+            if !UserDefaults.standard.bool(forKey: Self.hasSeenDefaultAutoSortPromptKey) {
+                if todayViewModel.showDefaultAutoSortRulesIfNeeded() {
+                    UserDefaults.standard.set(true, forKey: Self.hasSeenDefaultAutoSortPromptKey)
+                }
+            }
             if !state.isTracking {
                 DispatchQueue.main.async { [weak self] in
                     self?.menuBarViewModel.toggleTracking()
@@ -195,27 +206,31 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
         libraryService.reloadToday()
         projectSessionService.reloadToday()
         dashboardService.reload()
-        openWindow?("main")
+        openMainWindow()
     }
 
     func openAnalytics() {
         select(.analytics)
         analyticsService.reload()
-        openWindow?("main")
+        openMainWindow()
     }
 
     func openSettings() {
         select(.categories)
-        openWindow?("main")
+        openMainWindow()
     }
 
     func openProjects() {
         select(.contexts)
-        openWindow?("main")
+        openMainWindow()
     }
 
     func openCategories() {
         select(.categories)
+        openMainWindow()
+    }
+
+    private func openMainWindow() {
         openWindow?("main")
     }
 
@@ -241,6 +256,31 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
     func dismissPrompt() {
         promptPanelCoordinator.dismissPrompt()
     }
+
+    #if DEBUG
+    private func openMainWindowInDebugOnLaunch() {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else {
+            return
+        }
+        openMainWindowInDebugOnLaunch(retryCount: 0)
+    }
+
+    private func openMainWindowInDebugOnLaunch(retryCount: Int) {
+        guard retryCount < 20 else {
+            return
+        }
+
+        if let openWindow {
+            openWindow("main")
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.openMainWindowInDebugOnLaunch(retryCount: retryCount + 1)
+        }
+    }
+    #endif
 
     private static func defaultStorePath() -> String {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first

@@ -21,7 +21,7 @@ struct DailyReplicaApp: App {
     }
 }
 
-private struct MainWindowView: View {
+struct MainWindowView: View {
     @ObservedObject var coordinator: AppCoordinator
 
     var body: some View {

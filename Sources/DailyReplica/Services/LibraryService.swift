@@ -5,7 +5,8 @@ struct AutoSortRuleRequest: Identifiable, Equatable {
     let id = UUID()
     let kind: ClassificationRuleKind
     let pattern: String
-    let categoryID: String
+    var categoryID: String
+    var isEnabled: Bool = true
     let title: String
 }
 
@@ -228,7 +229,7 @@ final class LibraryService {
     }
 
     func refreshAccessibilityTrust(prompt: Bool) {
-        state.accessibilityTrusted = permissionChecker.isAccessibilityTrusted(prompt: prompt)
+        state.accessibilityTrusted = permissionChecker.isAccessibilityTrusted(prompt: prompt) || state.hasObservedWindowTitles
     }
 
     private func sortCategories() {

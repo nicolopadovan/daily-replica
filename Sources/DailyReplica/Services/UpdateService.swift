@@ -20,6 +20,7 @@ final class UpdateService: ObservableObject {
 
     init() {
         guard Self.hasUsableSparkleConfiguration else {
+            updateDriverDelegate = nil
             updaterController = nil
             return
         }
@@ -88,7 +89,7 @@ private final class UpdateGentleReminderDelegate: NSObject, SPUStandardUserDrive
         true
     }
 
-    func standardUserDriverShouldHandleShowingScheduledUpdate(_ handleShowingUpdate: Bool, andInImmediateFocus immediateFocus: Bool) -> Bool {
+    func standardUserDriverShouldHandleShowingScheduledUpdate(_ update: SUAppcastItem, andInImmediateFocus immediateFocus: Bool) -> Bool {
         false
     }
 }
