@@ -35,6 +35,78 @@ final class LibraryServiceTests: XCTestCase {
         XCTAssertEqual(harness.state.rules.first?.pattern, "github.com")
         XCTAssertEqual(harness.store.rules.first?.pattern, "github.com")
     }
+
+    func testAddRuleUpdatesDuplicateRuleCategory() {
+        let harness = AppHarness()
+
+        harness.libraryService.addRule(kind: .appBundleID, pattern: "com.example.App", categoryID: CategoryID.work.rawValue)
+        harness.libraryService.addRule(kind: .appBundleID, pattern: "com.example.App", categoryID: CategoryID.personal.rawValue)
+
+        XCTAssertEqual(harness.state.rules.count, 1)
+        XCTAssertEqual(harness.state.rules.first?.categoryID, CategoryID.personal.rawValue)
+        XCTAssertEqual(harness.store.rules.count, 1)
+        XCTAssertEqual(harness.store.rules.first?.categoryID, CategoryID.personal.rawValue)
+    }
+
+    func testUpdateRuleCategoryPersistsExistingRule() {
+        let harness = AppHarness()
+        let rule = ClassificationRule(kind: .chromeHost, pattern: "github.com", categoryID: CategoryID.work.rawValue)
+        harness.state.rules = [rule]
+        harness.store.rules = [rule]
+
+        harness.libraryService.updateRuleCategory(id: rule.id, categoryID: CategoryID.personal.rawValue)
+
+        XCTAssertEqual(harness.state.rules.first?.categoryID, CategoryID.personal.rawValue)
+        XCTAssertEqual(harness.store.rules.first?.categoryID, CategoryID.personal.rawValue)
+    }
+
+    func testClassifyUncategorizedCreatesRuleAndPersistsMatchingSegments() {
+        let harness = AppHarness()
+        let matching = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 70),
+            state: .active,
+            appBundleID: "com.google.Chrome",
+            appName: "Google Chrome",
+            urlHost: "github.com",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let subdomain = ActivitySegment(
+            start: Date(timeIntervalSince1970: 70),
+            end: Date(timeIntervalSince1970: 130),
+            state: .active,
+            appBundleID: "com.google.Chrome",
+            appName: "Google Chrome",
+            urlHost: "docs.github.com",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let other = ActivitySegment(
+            start: Date(timeIntervalSince1970: 130),
+            end: Date(timeIntervalSince1970: 190),
+            state: .active,
+            appBundleID: "com.apple.Safari",
+            appName: "Safari",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [matching, subdomain, other]
+        harness.store.segments = harness.state.todaySegments
+
+        let count = harness.libraryService.classifyUncategorized(
+            kind: .chromeHost,
+            pattern: "github.com",
+            categoryID: CategoryID.work.rawValue
+        )
+
+        XCTAssertEqual(count, 2)
+        XCTAssertEqual(harness.state.rules.first?.pattern, "github.com")
+        XCTAssertEqual(harness.state.todaySegments.map(\.categoryID), [
+            CategoryID.work.rawValue,
+            CategoryID.work.rawValue,
+            CategoryID.unclassified.rawValue
+        ])
+        XCTAssertEqual(harness.state.todaySegments[0].manualCategoryID, CategoryID.work.rawValue)
+        XCTAssertEqual(harness.store.upsertedSegments.count, 2)
+    }
 }
 
 @MainActor
@@ -622,6 +694,63 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.categoryName, "")
     }
 
+    func testSettingsViewModelExposesRuleSuggestionsFromManualCorrections() {
+        let harness = AppHarness()
+        harness.state.todaySegments = [
+            correctedAppSegment(start: 10, end: 70),
+            correctedAppSegment(start: 70, end: 130)
+        ]
+        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+
+        XCTAssertEqual(viewModel.ruleSuggestions.count, 1)
+        XCTAssertEqual(viewModel.ruleSuggestions.first?.pattern, "com.example.Editor")
+        XCTAssertEqual(viewModel.ruleSuggestions.first?.suggestedCategoryID, CategoryID.work.rawValue)
+    }
+
+    func testSettingsViewModelAcceptsSuggestionAndRemovesIt() {
+        let harness = AppHarness()
+        harness.state.todaySegments = [
+            correctedAppSegment(start: 10, end: 70),
+            correctedAppSegment(start: 70, end: 130)
+        ]
+        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+
+        guard let suggestion = viewModel.ruleSuggestions.first else {
+            return XCTFail("Expected a rule suggestion")
+        }
+        viewModel.acceptRuleSuggestion(suggestion)
+
+        XCTAssertEqual(harness.state.rules.first?.kind, .appBundleID)
+        XCTAssertEqual(harness.state.rules.first?.pattern, "com.example.Editor")
+        XCTAssertTrue(viewModel.ruleSuggestions.isEmpty)
+    }
+
+    func testSettingsViewModelBulkClassifiesWithSelectedCategory() {
+        let harness = AppHarness()
+        harness.state.todaySegments = [
+            ActivitySegment(
+                start: Date(timeIntervalSince1970: 10),
+                end: Date(timeIntervalSince1970: 70),
+                state: .active,
+                appBundleID: "com.example.Editor",
+                appName: "Editor",
+                categoryID: CategoryID.unclassified.rawValue
+            )
+        ]
+        harness.store.segments = harness.state.todaySegments
+        let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
+        viewModel.bulkRuleCategoryID = CategoryID.personal.rawValue
+
+        guard let candidate = viewModel.unclassifiedCandidates.first else {
+            return XCTFail("Expected an uncategorized candidate")
+        }
+        let changed = viewModel.classifyUncategorized(candidate)
+
+        XCTAssertEqual(changed, 1)
+        XCTAssertEqual(harness.state.rules.first?.categoryID, CategoryID.personal.rawValue)
+        XCTAssertEqual(harness.state.todaySegments.first?.categoryID, CategoryID.personal.rawValue)
+    }
+
     func testMenuViewModelCapturesNewSegmentWhenProjectChangesDuringTracking() {
         let harness = AppHarness()
         let firstContext = ProjectContext(name: "Client A", defaultCategoryID: CategoryID.work.rawValue)
@@ -649,6 +778,18 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(harness.state.todaySegments[0].contextID, firstContext.id)
         XCTAssertEqual(harness.state.todaySegments[1].contextID, secondContext.id)
         XCTAssertEqual(harness.store.upsertedSegments.last?.contextID, secondContext.id)
+    }
+
+    private func correctedAppSegment(start: TimeInterval, end: TimeInterval) -> ActivitySegment {
+        ActivitySegment(
+            start: Date(timeIntervalSince1970: start),
+            end: Date(timeIntervalSince1970: end),
+            state: .active,
+            appBundleID: "com.example.Editor",
+            appName: "Editor",
+            categoryID: CategoryID.work.rawValue,
+            manualCategoryID: CategoryID.work.rawValue
+        )
     }
 }
 

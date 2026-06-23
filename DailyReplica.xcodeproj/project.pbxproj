@@ -34,6 +34,7 @@
 		010200000000000000000002 /* ActivityDayPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000002 /* ActivityDayPresentation.swift */; };
 		010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000009 /* ActivityDashboardPresentation.swift */; };
 		010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000003 /* ActivitySegmentReducer.swift */; };
+		01020000000000000000000A /* ClassificationCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000A /* ClassificationCandidates.swift */; };
 		010200000000000000000004 /* DateSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000004 /* DateSupport.swift */; };
 		010200000000000000000005 /* IdleClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000005 /* IdleClassifier.swift */; };
 		010200000000000000000006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000006 /* Models.swift */; };
@@ -103,6 +104,7 @@
 		020200000000000000000002 /* ActivityDayPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDayPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000009 /* ActivityDashboardPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDashboardPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000003 /* ActivitySegmentReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentReducer.swift; sourceTree = "<group>"; };
+		02020000000000000000000A /* ClassificationCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationCandidates.swift; sourceTree = "<group>"; };
 		020200000000000000000004 /* DateSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateSupport.swift; sourceTree = "<group>"; };
 		020200000000000000000005 /* IdleClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleClassifier.swift; sourceTree = "<group>"; };
 		020200000000000000000006 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 				020200000000000000000009 /* ActivityDashboardPresentation.swift */,
 				020200000000000000000002 /* ActivityDayPresentation.swift */,
 				020200000000000000000003 /* ActivitySegmentReducer.swift */,
+				02020000000000000000000A /* ClassificationCandidates.swift */,
 				020200000000000000000004 /* DateSupport.swift */,
 				020200000000000000000005 /* IdleClassifier.swift */,
 				020200000000000000000006 /* Models.swift */,
@@ -446,6 +449,7 @@
 				010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */,
 				010200000000000000000002 /* ActivityDayPresentation.swift in Sources */,
 				010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */,
+				01020000000000000000000A /* ClassificationCandidates.swift in Sources */,
 				010200000000000000000004 /* DateSupport.swift in Sources */,
 				010200000000000000000005 /* IdleClassifier.swift in Sources */,
 				010200000000000000000006 /* Models.swift in Sources */,

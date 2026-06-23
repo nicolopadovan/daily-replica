@@ -172,6 +172,32 @@ enum PreviewFactory {
                 contextID: context.id,
                 contextName: context.name,
                 manualCategoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: day.start.addingTimeInterval(11 * 60 * 60 + 30 * 60),
+                end: day.start.addingTimeInterval(11 * 60 * 60 + 45 * 60),
+                state: .active,
+                appBundleID: "com.tinyspeck.slackmacgap",
+                appName: "Slack",
+                categoryID: CategoryID.communication.rawValue,
+                manualCategoryID: CategoryID.communication.rawValue
+            ),
+            ActivitySegment(
+                start: day.start.addingTimeInterval(11 * 60 * 60 + 45 * 60),
+                end: day.start.addingTimeInterval(12 * 60 * 60),
+                state: .active,
+                appBundleID: "com.tinyspeck.slackmacgap",
+                appName: "Slack",
+                categoryID: CategoryID.communication.rawValue,
+                manualCategoryID: CategoryID.communication.rawValue
+            ),
+            ActivitySegment(
+                start: day.start.addingTimeInterval(12 * 60 * 60),
+                end: day.start.addingTimeInterval(12 * 60 * 60 + 20 * 60),
+                state: .active,
+                appBundleID: "md.obsidian",
+                appName: "Obsidian",
+                categoryID: CategoryID.unclassified.rawValue
             )
         ]
     }

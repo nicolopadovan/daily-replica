@@ -192,6 +192,65 @@ struct SettingsView: View {
                 }
             }
 
+            if !viewModel.ruleSuggestions.isEmpty {
+                JournalSectionHeader(title: "Suggested rules", detail: "\(viewModel.ruleSuggestions.count)")
+                VStack(spacing: 8) {
+                    ForEach(viewModel.ruleSuggestions) { suggestion in
+                        HStack {
+                            PreferenceRow(
+                                icon: suggestion.kind == .appBundleID ? "app.fill" : "globe",
+                                tint: CalmPalette.categoryColor(suggestion.suggestedCategoryID ?? CategoryID.unclassified.rawValue),
+                                title: suggestion.title,
+                                subtitle: "\(suggestion.subtitle) · \(suggestion.segmentCount) corrections · \(DurationFormatter.format(suggestion.duration))"
+                            )
+                            Spacer()
+                            Button {
+                                viewModel.acceptRuleSuggestion(suggestion)
+                            } label: {
+                                Label("Add rule", systemImage: "plus.circle.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(CalmPalette.cypress)
+                        }
+                        .padding(.trailing, 10)
+                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    }
+                }
+            }
+
+            if !viewModel.unclassifiedCandidates.isEmpty {
+                JournalSectionHeader(title: "Unsorted today", detail: "\(viewModel.unclassifiedCandidates.count)")
+                HStack {
+                    Picker("Classify as", selection: $viewModel.bulkRuleCategoryID) {
+                        ForEach(viewModel.assignableCategories) { category in
+                            Text(category.name).tag(category.id)
+                        }
+                    }
+                    .frame(width: 240)
+                    Spacer()
+                }
+                VStack(spacing: 8) {
+                    ForEach(viewModel.unclassifiedCandidates) { candidate in
+                        HStack {
+                            PreferenceRow(
+                                icon: candidate.kind == .appBundleID ? "app.fill" : "globe",
+                                tint: CalmPalette.categoryColor(viewModel.bulkRuleCategoryID),
+                                title: candidate.title,
+                                subtitle: "\(candidate.subtitle) · \(candidate.segmentCount) entries · \(DurationFormatter.format(candidate.duration))"
+                            )
+                            Spacer()
+                            Button {
+                                viewModel.classifyUncategorized(candidate)
+                            } label: {
+                                Label("Classify", systemImage: "tag.fill")
+                            }
+                        }
+                        .padding(.trailing, 10)
+                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    }
+                }
+            }
+
             JournalSectionHeader(title: "Existing rules", detail: "\(viewModel.rules.count)")
             VStack(spacing: 8) {
                 ForEach(viewModel.rules) { rule in
@@ -203,6 +262,13 @@ struct SettingsView: View {
                             subtitle: "\(rule.kind == .appBundleID ? "App" : "Chrome website") goes to \(viewModel.displayName(for: rule.categoryID))"
                         )
                         Spacer()
+                        Picker("Category", selection: ruleCategoryBinding(for: rule)) {
+                            ForEach(viewModel.assignableCategories) { category in
+                                Text(category.name).tag(category.id)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 180)
                         Button("Delete") {
                             viewModel.deleteRule(id: rule.id)
                         }
@@ -212,6 +278,13 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private func ruleCategoryBinding(for rule: ClassificationRule) -> Binding<String> {
+        Binding(
+            get: { rule.categoryID },
+            set: { viewModel.updateRuleCategory(id: rule.id, categoryID: $0) }
+        )
     }
 
     private var permissionsPane: some View {

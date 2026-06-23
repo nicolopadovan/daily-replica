@@ -107,18 +107,69 @@ final class LibraryService {
         }
     }
 
-    func addRule(kind: ClassificationRuleKind, pattern: String, categoryID: String) {
+    @discardableResult
+    func addRule(kind: ClassificationRuleKind, pattern: String, categoryID: String) -> ClassificationRule? {
         let normalized = ClassificationRule.normalizedPattern(pattern, kind: kind)
         guard !normalized.isEmpty else {
-            return
+            return nil
+        }
+        if let index = state.rules.firstIndex(where: { $0.kind == kind && $0.pattern == normalized }) {
+            var rule = state.rules[index]
+            rule.categoryID = categoryID
+            return persistRule(rule, replacingIndex: index)
         }
         let rule = ClassificationRule(kind: kind, pattern: normalized, categoryID: categoryID)
+        return persistRule(rule)
+    }
+
+    func updateRuleCategory(id: UUID, categoryID: String) {
+        guard let index = state.rules.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        var rule = state.rules[index]
+        rule.categoryID = categoryID
+        _ = persistRule(rule, replacingIndex: index)
+    }
+
+    @discardableResult
+    func classifyUncategorized(kind: ClassificationRuleKind, pattern: String, categoryID: String) -> Int {
+        guard let rule = addRule(kind: kind, pattern: pattern, categoryID: categoryID) else {
+            return 0
+        }
+
+        var changedCount = 0
+        for index in state.todaySegments.indices {
+            let segment = state.todaySegments[index]
+            guard segment.categoryID == CategoryID.unclassified.rawValue,
+                  segmentMatchesRule(segment, rule: rule) else {
+                continue
+            }
+
+            let edited = segment.applyingManualEdit(categoryID: categoryID)
+            do {
+                try store.upsertSegment(edited)
+                state.todaySegments[index] = edited
+                changedCount += 1
+            } catch {
+                state.lastError = error.localizedDescription
+            }
+        }
+        return changedCount
+    }
+
+    private func persistRule(_ rule: ClassificationRule, replacingIndex index: Int? = nil) -> ClassificationRule? {
         do {
             try store.upsertRule(rule)
-            state.rules.append(rule)
+            if let index {
+                state.rules[index] = rule
+            } else {
+                state.rules.append(rule)
+            }
             sortRules()
+            return rule
         } catch {
             state.lastError = error.localizedDescription
+            return nil
         }
     }
 
@@ -153,6 +204,18 @@ final class LibraryService {
 
     private func sortRules() {
         state.rules.sort { $0.pattern.localizedCaseInsensitiveCompare($1.pattern) == .orderedAscending }
+    }
+
+    private func segmentMatchesRule(_ segment: ActivitySegment, rule: ClassificationRule) -> Bool {
+        switch rule.kind {
+        case .appBundleID:
+            return segment.appBundleID == rule.pattern
+        case .chromeHost:
+            guard let host = segment.urlHost ?? segment.urlString.flatMap({ URL(string: $0)?.host }) else {
+                return false
+            }
+            return ActivityClassifier.host(host, matches: rule.pattern)
+        }
     }
 
     private static func slug(for name: String) -> String {

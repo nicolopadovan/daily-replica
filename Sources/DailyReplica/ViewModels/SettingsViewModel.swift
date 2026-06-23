@@ -38,6 +38,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var ruleKind = ClassificationRuleKind.appBundleID
     @Published var rulePattern = ""
     @Published var ruleCategoryID = CategoryID.work.rawValue
+    @Published var bulkRuleCategoryID = CategoryID.work.rawValue
 
     private let state: AppState
     private let libraryService: LibraryService
@@ -55,6 +56,12 @@ final class SettingsViewModel: ObservableObject {
     var contexts: [ProjectContext] { state.contexts }
     var rules: [ClassificationRule] { state.rules }
     var accessibilityTrusted: Bool { state.accessibilityTrusted }
+    var ruleSuggestions: [ClassificationCandidate] {
+        ClassificationCandidatePresenter.ruleSuggestions(from: state.todaySegments, rules: state.rules)
+    }
+    var unclassifiedCandidates: [ClassificationCandidate] {
+        ClassificationCandidatePresenter.unclassifiedCandidates(from: state.todaySegments, rules: state.rules)
+    }
 
     var assignableCategories: [CategoryDefinition] {
         state.categories.filter { $0.id != CategoryID.inactive.rawValue }
@@ -79,8 +86,30 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func createRule() {
-        libraryService.addRule(kind: ruleKind, pattern: rulePattern, categoryID: ruleCategoryID)
+        guard libraryService.addRule(kind: ruleKind, pattern: rulePattern, categoryID: ruleCategoryID) != nil else {
+            return
+        }
         rulePattern = ""
+    }
+
+    func acceptRuleSuggestion(_ suggestion: ClassificationCandidate) {
+        guard let categoryID = suggestion.suggestedCategoryID else {
+            return
+        }
+        libraryService.addRule(kind: suggestion.kind, pattern: suggestion.pattern, categoryID: categoryID)
+    }
+
+    @discardableResult
+    func classifyUncategorized(_ candidate: ClassificationCandidate) -> Int {
+        libraryService.classifyUncategorized(
+            kind: candidate.kind,
+            pattern: candidate.pattern,
+            categoryID: bulkRuleCategoryID
+        )
+    }
+
+    func updateRuleCategory(id: UUID, categoryID: String) {
+        libraryService.updateRuleCategory(id: id, categoryID: categoryID)
     }
 
     func setCurrentContext(id: UUID) {
