@@ -17,16 +17,19 @@ final class TodayViewModel: ObservableObject {
     private let state: AppState
     private let libraryService: LibraryService
     private let segmentEditingService: SegmentEditingService
+    private let dashboardService: DashboardService
     private var stateCancellable: AnyCancellable?
 
     init(
         state: AppState,
         libraryService: LibraryService,
-        segmentEditingService: SegmentEditingService
+        segmentEditingService: SegmentEditingService,
+        dashboardService: DashboardService
     ) {
         self.state = state
         self.libraryService = libraryService
         self.segmentEditingService = segmentEditingService
+        self.dashboardService = dashboardService
         stateCancellable = state.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -35,6 +38,23 @@ final class TodayViewModel: ObservableObject {
     var todaySegments: [ActivitySegment] { state.todaySegments }
     var todaySummary: ActivityDaySummary { state.todaySummary }
     var todayRibbonEntries: [ActivityRibbonEntry] { state.todayRibbonEntries }
+    var dashboardPeriod: DashboardPeriod { state.dashboardPeriod }
+    var dashboardSummary: ActivityDashboardSummary { state.dashboardSummary }
+    var dashboardIntervalTitle: String {
+        switch state.dashboardPeriod {
+        case .day:
+            return state.dashboardInterval.start.formatted(date: .abbreviated, time: .omitted)
+        case .week:
+            return "\(state.dashboardInterval.start.formatted(date: .abbreviated, time: .omitted)) - \(state.dashboardInterval.end.addingTimeInterval(-1).formatted(date: .abbreviated, time: .omitted))"
+        case .month:
+            return state.dashboardInterval.start.formatted(.dateTime.month(.wide).year())
+        }
+    }
+    var dashboardCategoryItems: [DashboardMetricItem] { Array(dashboardSummary.categoryItems.prefix(5)) }
+    var dashboardProjectItems: [DashboardMetricItem] { Array(dashboardSummary.projectItems.prefix(5)) }
+    var dashboardAppItems: [DashboardMetricItem] { Array(dashboardSummary.appItems.prefix(5)) }
+    var dashboardWebsiteItems: [DashboardMetricItem] { Array(dashboardSummary.websiteItems.prefix(5)) }
+    var dashboardDailyTotals: [DashboardDailyTotal] { dashboardSummary.dailyTotals }
     var currentContextName: String { state.currentContext?.name ?? "No current project" }
     var isTracking: Bool { state.isTracking }
     var categories: [CategoryDefinition] { state.categories }
@@ -77,7 +97,12 @@ final class TodayViewModel: ObservableObject {
 
     func reloadToday() {
         libraryService.reloadToday()
+        dashboardService.reload()
         selectLatestIfNeeded()
+    }
+
+    func setDashboardPeriod(_ period: DashboardPeriod) {
+        dashboardService.setPeriod(period)
     }
 
     func selectLatestIfNeeded() {
@@ -98,10 +123,12 @@ final class TodayViewModel: ObservableObject {
 
     func editSegmentCategory(segmentID: UUID, categoryID: String) {
         segmentEditingService.editCategory(segmentID: segmentID, categoryID: categoryID)
+        dashboardService.reload()
     }
 
     func editSegmentContext(segmentID: UUID, contextID: UUID?) {
         segmentEditingService.editContext(segmentID: segmentID, contextID: contextID)
+        dashboardService.reload()
     }
 
     func resetSplitTime(for segment: ActivitySegment?) {
@@ -119,6 +146,7 @@ final class TodayViewModel: ObservableObject {
         }
         selectedSegmentID = right.id
         resetSplitTime(for: right)
+        dashboardService.reload()
     }
 
     func mergeSelectedSegmentWithPrevious() {
@@ -129,6 +157,7 @@ final class TodayViewModel: ObservableObject {
         }
         selectedSegmentID = merged.id
         resetSplitTime(for: merged)
+        dashboardService.reload()
     }
 
     func mergeSelectedSegmentWithNext() {
@@ -139,6 +168,7 @@ final class TodayViewModel: ObservableObject {
         }
         selectedSegmentID = merged.id
         resetSplitTime(for: merged)
+        dashboardService.reload()
     }
 
     @discardableResult

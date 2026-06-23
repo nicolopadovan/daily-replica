@@ -8,6 +8,7 @@ struct TodayView: View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 18) {
                 journalHeader
+                dashboardPanel
 
                 VStack(alignment: .leading, spacing: 10) {
                     JournalSectionHeader(title: "Day ribbon", detail: Date().formatted(date: .abbreviated, time: .omitted))
@@ -98,6 +99,90 @@ struct TodayView: View {
         }
     }
 
+    private var dashboardPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 12) {
+                JournalSectionHeader(title: "Screen Time", detail: viewModel.dashboardIntervalTitle)
+
+                Picker("Period", selection: dashboardPeriodBinding) {
+                    ForEach(DashboardPeriod.allCases) { period in
+                        Text(period.displayName).tag(period)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 210)
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                DashboardMetricCell(
+                    title: "Tracked",
+                    value: DurationFormatter.format(viewModel.dashboardSummary.totalDuration),
+                    tint: CalmPalette.cypress,
+                    symbol: "clock"
+                )
+                DashboardMetricCell(
+                    title: "Focused",
+                    value: DurationFormatter.format(viewModel.dashboardSummary.focusedWorkDuration),
+                    tint: CalmPalette.signalBlue,
+                    symbol: "scope"
+                )
+                DashboardMetricCell(
+                    title: "Distractions",
+                    value: DurationFormatter.format(viewModel.dashboardSummary.distractionDuration),
+                    tint: CalmPalette.rose,
+                    symbol: "exclamationmark.triangle.fill"
+                )
+                DashboardMetricCell(
+                    title: "Unsorted",
+                    value: DurationFormatter.format(viewModel.dashboardSummary.unclassifiedDuration),
+                    tint: CalmPalette.persimmon,
+                    symbol: "tag.slash.fill"
+                )
+            }
+
+            if !viewModel.dashboardDailyTotals.isEmpty {
+                DashboardDailyTotalsStrip(totals: viewModel.dashboardDailyTotals)
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                DashboardRankList(
+                    title: "Categories",
+                    items: viewModel.dashboardCategoryItems,
+                    emptyTitle: "No category time",
+                    titleForItem: { viewModel.displayName(for: $0.id) },
+                    tintForItem: { CalmPalette.categoryColor($0.id) }
+                )
+                DashboardRankList(
+                    title: "Projects",
+                    items: viewModel.dashboardProjectItems,
+                    emptyTitle: "No project time",
+                    tint: CalmPalette.cypress
+                )
+                DashboardRankList(
+                    title: "Apps",
+                    items: viewModel.dashboardAppItems,
+                    emptyTitle: "No app time",
+                    tint: CalmPalette.signalBlue
+                )
+                DashboardRankList(
+                    title: "Websites",
+                    items: viewModel.dashboardWebsiteItems,
+                    emptyTitle: "No website time",
+                    tint: CalmPalette.iris
+                )
+            }
+        }
+        .journalSurface()
+    }
+
+    private var dashboardPeriodBinding: Binding<DashboardPeriod> {
+        Binding(
+            get: { viewModel.dashboardPeriod },
+            set: { viewModel.setDashboardPeriod($0) }
+        )
+    }
+
     private var timeline: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
@@ -112,6 +197,172 @@ struct TodayView: View {
             }
             .padding(.bottom, 12)
         }
+    }
+}
+
+private struct DashboardMetricCell: View {
+    let title: String
+    let value: String
+    let tint: Color
+    let symbol: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 28, height: 28)
+                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded).monospacedDigit())
+                    .lineLimit(1)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(CalmPalette.porcelain.opacity(0.55), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct DashboardRankList: View {
+    let title: String
+    let items: [DashboardMetricItem]
+    let emptyTitle: String
+    var titleForItem: (DashboardMetricItem) -> String = { $0.title }
+    var tintForItem: (DashboardMetricItem) -> Color
+
+    init(
+        title: String,
+        items: [DashboardMetricItem],
+        emptyTitle: String,
+        titleForItem: @escaping (DashboardMetricItem) -> String = { $0.title },
+        tintForItem: @escaping (DashboardMetricItem) -> Color
+    ) {
+        self.title = title
+        self.items = items
+        self.emptyTitle = emptyTitle
+        self.titleForItem = titleForItem
+        self.tintForItem = tintForItem
+    }
+
+    init(title: String, items: [DashboardMetricItem], emptyTitle: String, tint: Color) {
+        self.title = title
+        self.items = items
+        self.emptyTitle = emptyTitle
+        self.tintForItem = { _ in tint }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+
+            if items.isEmpty {
+                Text(emptyTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 10)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(items) { item in
+                        DashboardRankRow(
+                            title: titleForItem(item),
+                            duration: item.duration,
+                            maxDuration: maxDuration,
+                            tint: tintForItem(item)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private var maxDuration: TimeInterval {
+        max(items.map(\.duration).max() ?? 1, 1)
+    }
+}
+
+private struct DashboardRankRow: View {
+    let title: String
+    let duration: TimeInterval
+    let maxDuration: TimeInterval
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.caption)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Text(DurationFormatter.format(duration))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(CalmPalette.mist.opacity(0.65))
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: proxy.size.width * progress)
+                }
+            }
+            .frame(height: 5)
+        }
+    }
+
+    private var progress: CGFloat {
+        CGFloat(min(max(duration / maxDuration, 0), 1))
+    }
+}
+
+private struct DashboardDailyTotalsStrip: View {
+    let totals: [DashboardDailyTotal]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Daily totals")
+                .font(.subheadline.weight(.semibold))
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(totals) { total in
+                    VStack(spacing: 5) {
+                        GeometryReader { proxy in
+                            VStack {
+                                Spacer(minLength: 0)
+                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                    .fill(total.unclassifiedDuration > 0 ? CalmPalette.persimmon : CalmPalette.cypress)
+                                    .frame(height: max(3, proxy.size.height * barProgress(for: total)))
+                            }
+                        }
+                        .frame(height: 42)
+
+                        Text(total.date.formatted(.dateTime.weekday(.narrow)))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+
+    private var maxDuration: TimeInterval {
+        max(totals.map(\.totalDuration).max() ?? 1, 1)
+    }
+
+    private func barProgress(for total: DashboardDailyTotal) -> CGFloat {
+        CGFloat(min(max(total.totalDuration / maxDuration, 0), 1))
     }
 }
 

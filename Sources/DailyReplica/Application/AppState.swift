@@ -8,6 +8,10 @@ final class AppState: ObservableObject {
     @Published var contexts: [ProjectContext] = []
     @Published var currentContextID: UUID?
     @Published var todayProjectSessions: [ProjectSession] = []
+    @Published var dashboardPeriod: DashboardPeriod = .day
+    @Published var dashboardInterval = DashboardPeriod.day.interval(containing: Date())
+    @Published var dashboardSegments: [ActivitySegment] = []
+    @Published var dashboardProjectSessions: [ProjectSession] = []
     @Published var rules: [ClassificationRule] = []
     @Published var todaySegments: [ActivitySegment] = []
     @Published var activePrompt: SmartPrompt?
@@ -32,6 +36,14 @@ final class AppState: ObservableObject {
 
     var todaySummary: ActivityDaySummary {
         ActivityDayPresenter.summary(for: todaySegments, in: todayInterval)
+    }
+
+    var dashboardSummary: ActivityDashboardSummary {
+        ActivityDashboardPresenter.summary(
+            for: dashboardSegments,
+            projectSessions: dashboardProjectSessions,
+            in: dashboardInterval
+        )
     }
 
     var todayRibbonEntries: [ActivityRibbonEntry] {

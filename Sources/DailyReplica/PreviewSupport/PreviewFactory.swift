@@ -23,7 +23,8 @@ enum PreviewFactory {
         let viewModel = TodayViewModel(
             state: fixture.state,
             libraryService: fixture.libraryService,
-            segmentEditingService: fixture.segmentEditingService
+            segmentEditingService: fixture.segmentEditingService,
+            dashboardService: fixture.dashboardService
         )
         viewModel.coordinator = fixture.coordinator
         viewModel.selectedSegmentID = fixture.state.todaySegments.last?.id
@@ -86,6 +87,7 @@ enum PreviewFactory {
             state: state,
             contextPersistence: contextPersistence
         )
+        let dashboardService = DashboardService(store: store, state: state)
         let promptService = PromptService(state: state, libraryService: libraryService)
         let trackingService = TrackingService(
             store: store,
@@ -115,6 +117,10 @@ enum PreviewFactory {
             ClassificationRule(kind: .chromeHost, pattern: "github.com", categoryID: CategoryID.work.rawValue)
         ]
         state.todaySegments = sampleSegments(context: context)
+        state.dashboardSegments = state.todaySegments
+        state.dashboardProjectSessions = state.todayProjectSessions
+        store.segments = state.todaySegments
+        store.projectSessions = state.todayProjectSessions
         state.lastSampleDescription = "Xcode · Work · github.com"
         state.accessibilityTrusted = false
 
@@ -123,6 +129,7 @@ enum PreviewFactory {
             libraryService: libraryService,
             segmentEditingService: segmentEditingService,
             projectSessionService: projectSessionService,
+            dashboardService: dashboardService,
             promptService: promptService,
             trackingService: trackingService,
             coordinator: PreviewCoordinator()
@@ -176,6 +183,7 @@ private struct PreviewFixture {
     let libraryService: LibraryService
     let segmentEditingService: SegmentEditingService
     let projectSessionService: ProjectSessionService
+    let dashboardService: DashboardService
     let promptService: PromptService
     let trackingService: TrackingService
     let coordinator: AppCoordinating

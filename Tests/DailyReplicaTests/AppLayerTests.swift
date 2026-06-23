@@ -194,6 +194,66 @@ final class ProjectSessionServiceTests: XCTestCase {
 }
 
 @MainActor
+final class DashboardServiceTests: XCTestCase {
+    func testPeriodChangeFetchesExpectedInterval() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = DashboardService(store: harness.store, state: harness.state, calendar: calendar)
+        let now = Self.date(year: 2026, month: 6, day: 23, hour: 12)
+
+        service.setPeriod(.week, now: now)
+
+        XCTAssertEqual(harness.state.dashboardPeriod, .week)
+        XCTAssertEqual(harness.state.dashboardInterval.start, Self.date(year: 2026, month: 6, day: 22))
+        XCTAssertEqual(harness.store.fetchedSegmentIntervals.last, harness.state.dashboardInterval)
+        XCTAssertEqual(harness.store.fetchedProjectSessionIntervals.last, harness.state.dashboardInterval)
+    }
+
+    func testReloadUpdatesDashboardSegmentsAndProjectSessions() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = DashboardService(store: harness.store, state: harness.state, calendar: calendar)
+        let start = Self.date(year: 2026, month: 6, day: 23)
+        let context = ProjectContext(name: "Daily Replica", defaultCategoryID: CategoryID.work.rawValue)
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(300),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue,
+            contextID: context.id,
+            contextName: context.name
+        )
+        let session = ProjectSession(
+            contextID: context.id,
+            contextName: context.name,
+            start: start,
+            end: start.addingTimeInterval(600)
+        )
+        harness.store.segments = [segment]
+        harness.store.projectSessions = [session]
+
+        service.reload(now: start.addingTimeInterval(120))
+
+        XCTAssertEqual(harness.state.dashboardSegments, [segment])
+        XCTAssertEqual(harness.state.dashboardProjectSessions, [session])
+        XCTAssertEqual(harness.state.dashboardSummary.totalDuration, 300)
+        XCTAssertEqual(harness.state.dashboardSummary.projectItems.first?.duration, 600)
+    }
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    private static func date(year: Int, month: Int, day: Int, hour: Int = 0) -> Date {
+        DateComponents(calendar: calendar, timeZone: TimeZone(secondsFromGMT: 0), year: year, month: month, day: day, hour: hour).date!
+    }
+}
+
+@MainActor
 final class TrackingServiceTests: XCTestCase {
     func testCaptureTickCreatesAndUpdatesClassifiedSegment() {
         let harness = AppHarness()
@@ -383,7 +443,8 @@ final class ViewModelTests: XCTestCase {
         let viewModel = TodayViewModel(
             state: harness.state,
             libraryService: harness.libraryService,
-            segmentEditingService: harness.segmentEditingService
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
         )
 
         viewModel.selectedSegmentID = first.id
@@ -407,7 +468,8 @@ final class ViewModelTests: XCTestCase {
         let viewModel = TodayViewModel(
             state: harness.state,
             libraryService: harness.libraryService,
-            segmentEditingService: harness.segmentEditingService
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
         )
         viewModel.selectSegment(id: segment.id)
         viewModel.splitTime = start.addingTimeInterval(40)
@@ -440,7 +502,8 @@ final class ViewModelTests: XCTestCase {
         let viewModel = TodayViewModel(
             state: harness.state,
             libraryService: harness.libraryService,
-            segmentEditingService: harness.segmentEditingService
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
         )
         viewModel.selectSegment(id: selected.id)
 
@@ -487,7 +550,8 @@ final class ViewModelTests: XCTestCase {
         let viewModel = TodayViewModel(
             state: harness.state,
             libraryService: harness.libraryService,
-            segmentEditingService: harness.segmentEditingService
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
         )
         viewModel.newProjectName = "Correction Project"
         viewModel.newProjectCategoryID = CategoryID.work.rawValue
@@ -496,6 +560,55 @@ final class ViewModelTests: XCTestCase {
 
         XCTAssertEqual(harness.state.currentContextID, current.id)
         XCTAssertEqual(harness.state.todaySegments.first?.contextName, "Correction Project")
+    }
+
+    func testTodayViewModelDashboardPeriodDelegatesToService() {
+        let harness = AppHarness()
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.setDashboardPeriod(.month)
+
+        XCTAssertEqual(viewModel.dashboardPeriod, .month)
+        XCTAssertNotNil(harness.store.fetchedSegmentIntervals.last)
+        XCTAssertEqual(harness.store.fetchedSegmentIntervals.last, harness.state.dashboardInterval)
+    }
+
+    func testTodayViewModelExposesSortedDashboardItems() {
+        let harness = AppHarness()
+        let start = DateInterval.day(containing: Date()).start
+        harness.state.dashboardInterval = DateInterval(start: start, duration: 24 * 60 * 60)
+        harness.state.dashboardSegments = [
+            ActivitySegment(
+                start: start,
+                end: start.addingTimeInterval(120),
+                state: .active,
+                appBundleID: "com.apple.Safari",
+                appName: "Safari",
+                categoryID: CategoryID.browsing.rawValue
+            ),
+            ActivitySegment(
+                start: start.addingTimeInterval(120),
+                end: start.addingTimeInterval(420),
+                state: .active,
+                appBundleID: "com.apple.dt.Xcode",
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        XCTAssertEqual(viewModel.dashboardAppItems.map(\.title), ["Xcode", "Safari"])
+        XCTAssertEqual(viewModel.dashboardCategoryItems.first?.id, CategoryID.work.rawValue)
     }
 
     func testSettingsViewModelCreatesCategoryAndClearsField() {
@@ -551,6 +664,7 @@ private final class AppHarness {
     let libraryService: LibraryService
     let segmentEditingService: SegmentEditingService
     let projectSessionService: ProjectSessionService
+    let dashboardService: DashboardService
     let promptService: PromptService
     let trackingService: TrackingService
 
@@ -567,6 +681,7 @@ private final class AppHarness {
             state: state,
             contextPersistence: contextPersistence
         )
+        dashboardService = DashboardService(store: store, state: state)
         promptService = PromptService(state: state, libraryService: libraryService, promptEngine: promptEngine)
         trackingService = TrackingService(
             store: store,
@@ -591,6 +706,8 @@ private final class InMemoryActivityStore: ActivityStore {
     var deletedSegmentIDs: [UUID] = []
     var projectSessions: [ProjectSession] = []
     var upsertedProjectSessions: [ProjectSession] = []
+    var fetchedSegmentIntervals: [DateInterval] = []
+    var fetchedProjectSessionIntervals: [DateInterval] = []
 
     func fetchCategories() throws -> [CategoryDefinition] {
         categories
@@ -635,11 +752,13 @@ private final class InMemoryActivityStore: ActivityStore {
     }
 
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] {
-        segments.filter { $0.start < interval.end && $0.end >= interval.start }
+        fetchedSegmentIntervals.append(interval)
+        return segments.filter { $0.start < interval.end && $0.end >= interval.start }
     }
 
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] {
-        projectSessions.filter { $0.start < interval.end && ($0.end ?? .distantFuture) >= interval.start }
+        fetchedProjectSessionIntervals.append(interval)
+        return projectSessions.filter { $0.start < interval.end && ($0.end ?? .distantFuture) >= interval.start }
     }
 
     func fetchOpenProjectSession() throws -> ProjectSession? {
