@@ -7,7 +7,7 @@ A tiny macOS menu bar app for remembering what your day looked like.
 [![Release](https://img.shields.io/github/v/release/nicolopadovan/daily-replica?label=release)](https://github.com/nicolopadovan/daily-replica/releases)
 ![macOS](https://img.shields.io/badge/macOS-14%2B-black)
 ![Swift](https://img.shields.io/badge/Swift-6-orange)
-![License](https://img.shields.io/badge/license-TBD-lightgrey)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 </div>
 
@@ -64,6 +64,11 @@ The app will be created at:
 
 Not yet. Daily Replica is still an early app, but it is ready enough to try.
 
+### Is it security hardened?
+
+No. Daily Replica has not had a security audit or hardening pass yet. Treat it
+as experimental software and only install builds you trust.
+
 ### Does it work offline?
 
 Yes. Daily Replica is designed as a local macOS app.
@@ -79,4 +84,4 @@ missing, open an issue first so it can be discussed.
 
 ## 📄 License
 
-No license has been selected yet.
+MIT License. See [LICENSE](LICENSE).
