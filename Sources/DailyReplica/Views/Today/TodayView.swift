@@ -246,6 +246,7 @@ struct SegmentInspector: View {
                 header(for: segment)
                 Divider()
                 correctionControls(for: segment)
+                timelineEditingControls(for: segment)
                 metadata(for: segment)
                 Spacer()
             } else {
@@ -368,6 +369,47 @@ struct SegmentInspector: View {
                 .padding(10)
                 .background(CalmPalette.mist.opacity(0.4), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
+        }
+        .journalSurface()
+    }
+
+    private func timelineEditingControls(for segment: ActivitySegment) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            JournalSectionHeader(title: "Timeline edit")
+
+            DatePicker(
+                "Split at",
+                selection: $viewModel.splitTime,
+                in: segment.start...segment.end,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.compact)
+
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.mergeSelectedSegmentWithPrevious()
+                } label: {
+                    Label("Merge previous", systemImage: "arrow.left.to.line.compact")
+                }
+                .disabled(!viewModel.canMergeSelectedSegmentWithPrevious)
+
+                Button {
+                    viewModel.splitSelectedSegment()
+                } label: {
+                    Label("Split", systemImage: "scissors")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(CalmPalette.cypress)
+                .disabled(!viewModel.canSplitSelectedSegment)
+
+                Button {
+                    viewModel.mergeSelectedSegmentWithNext()
+                } label: {
+                    Label("Merge next", systemImage: "arrow.right.to.line.compact")
+                }
+                .disabled(!viewModel.canMergeSelectedSegmentWithNext)
+            }
+            .font(.caption)
         }
         .journalSurface()
     }

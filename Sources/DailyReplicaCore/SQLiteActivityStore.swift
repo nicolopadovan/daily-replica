@@ -215,6 +215,13 @@ public final class SQLiteActivityStore {
         try stepDone(statement)
     }
 
+    public func deleteSegment(id: UUID) throws {
+        let statement = try prepare("DELETE FROM activity_segments WHERE id = ?")
+        defer { sqlite3_finalize(statement) }
+        bindUUID(statement, 1, id)
+        try stepDone(statement)
+    }
+
     public func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] {
         let statement = try prepare(
             """

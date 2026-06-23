@@ -10,6 +10,7 @@ final class TodayViewModel: ObservableObject {
     @Published var newCategoryName = ""
     @Published var newProjectName = ""
     @Published var newProjectCategoryID = CategoryID.work.rawValue
+    @Published var splitTime = Date()
 
     weak var coordinator: AppCoordinating?
 
@@ -38,6 +39,26 @@ final class TodayViewModel: ObservableObject {
     var isTracking: Bool { state.isTracking }
     var categories: [CategoryDefinition] { state.categories }
     var contexts: [ProjectContext] { state.contexts }
+    var canSplitSelectedSegment: Bool {
+        guard let segment = selectedSegment else {
+            return false
+        }
+        return splitTime > segment.start && splitTime < segment.end
+    }
+
+    var canMergeSelectedSegmentWithPrevious: Bool {
+        guard let segmentID = selectedSegment?.id else {
+            return false
+        }
+        return segmentEditingService.segment(before: segmentID) != nil
+    }
+
+    var canMergeSelectedSegmentWithNext: Bool {
+        guard let segmentID = selectedSegment?.id else {
+            return false
+        }
+        return segmentEditingService.segment(after: segmentID) != nil
+    }
 
     var selectedSegment: ActivitySegment? {
         if let selectedSegmentID,
@@ -56,10 +77,12 @@ final class TodayViewModel: ObservableObject {
         if selectedSegmentID == nil || !state.todaySegments.contains(where: { $0.id == selectedSegmentID }) {
             selectedSegmentID = state.todaySegments.last?.id
         }
+        resetSplitTime(for: selectedSegment)
     }
 
     func selectSegment(id: UUID) {
         selectedSegmentID = id
+        resetSplitTime(for: selectedSegment)
     }
 
     func displayName(for categoryID: String) -> String {
@@ -72,6 +95,43 @@ final class TodayViewModel: ObservableObject {
 
     func editSegmentContext(segmentID: UUID, contextID: UUID?) {
         segmentEditingService.editContext(segmentID: segmentID, contextID: contextID)
+    }
+
+    func resetSplitTime(for segment: ActivitySegment?) {
+        guard let segment else {
+            splitTime = Date()
+            return
+        }
+        splitTime = segment.start.addingTimeInterval(segment.duration / 2)
+    }
+
+    func splitSelectedSegment() {
+        guard let segmentID = selectedSegment?.id,
+              let right = segmentEditingService.splitSegment(segmentID: segmentID, at: splitTime) else {
+            return
+        }
+        selectedSegmentID = right.id
+        resetSplitTime(for: right)
+    }
+
+    func mergeSelectedSegmentWithPrevious() {
+        guard let segmentID = selectedSegment?.id,
+              let previous = segmentEditingService.segment(before: segmentID),
+              let merged = segmentEditingService.mergeSegment(segmentID: segmentID, withAdjacentSegmentID: previous.id) else {
+            return
+        }
+        selectedSegmentID = merged.id
+        resetSplitTime(for: merged)
+    }
+
+    func mergeSelectedSegmentWithNext() {
+        guard let segmentID = selectedSegment?.id,
+              let next = segmentEditingService.segment(after: segmentID),
+              let merged = segmentEditingService.mergeSegment(segmentID: segmentID, withAdjacentSegmentID: next.id) else {
+            return
+        }
+        selectedSegmentID = merged.id
+        resetSplitTime(for: merged)
     }
 
     @discardableResult

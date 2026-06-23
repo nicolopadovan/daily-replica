@@ -207,6 +207,111 @@ final class ActivitySegmentReducerTests: XCTestCase {
         XCTAssertEqual(segments[2].urlHost, "developer.apple.com")
     }
 
+    func testSplitSegmentCreatesTwoBoundedSegments() {
+        let reducer = ActivitySegmentReducer()
+        let start = Date(timeIntervalSince1970: 100)
+        let split = start.addingTimeInterval(30)
+        var segments = [
+            ActivitySegment(
+                start: start,
+                end: start.addingTimeInterval(90),
+                state: .active,
+                appBundleID: "com.apple.dt.Xcode",
+                appName: "Xcode",
+                windowTitle: "Daily Replica",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+
+        let result = reducer.splitSegment(id: segments[0].id, at: split, in: &segments, editedAt: split)
+
+        XCTAssertEqual(segments.count, 2)
+        XCTAssertEqual(result?.left.id, segments[0].id)
+        XCTAssertEqual(result?.left.start, start)
+        XCTAssertEqual(result?.left.end, split)
+        XCTAssertEqual(result?.right.start, split)
+        XCTAssertEqual(result?.right.end, start.addingTimeInterval(90))
+        XCTAssertEqual(result?.right.appName, "Xcode")
+        XCTAssertEqual(result?.right.windowTitle, "Daily Replica")
+        XCTAssertEqual(result?.right.categoryID, CategoryID.work.rawValue)
+    }
+
+    func testSplitSegmentRejectsBounds() {
+        let reducer = ActivitySegmentReducer()
+        let start = Date(timeIntervalSince1970: 100)
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(90),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        var segments = [segment]
+
+        XCTAssertNil(reducer.splitSegment(id: segment.id, at: segment.start, in: &segments))
+        XCTAssertNil(reducer.splitSegment(id: segment.id, at: segment.end, in: &segments))
+        XCTAssertNil(reducer.splitSegment(id: segment.id, at: segment.start.addingTimeInterval(-1), in: &segments))
+        XCTAssertNil(reducer.splitSegment(id: segment.id, at: segment.end.addingTimeInterval(1), in: &segments))
+        XCTAssertEqual(segments, [segment])
+    }
+
+    func testMergeSegmentWithAdjacentPreservesSelectedMetadataAndID() {
+        let reducer = ActivitySegmentReducer()
+        let start = Date(timeIntervalSince1970: 100)
+        let previous = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(30),
+            state: .active,
+            appName: "Safari",
+            categoryID: CategoryID.browsing.rawValue
+        )
+        let selected = ActivitySegment(
+            start: start.addingTimeInterval(30),
+            end: start.addingTimeInterval(90),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue,
+            manualCategoryID: CategoryID.work.rawValue
+        )
+        let next = ActivitySegment(
+            start: start.addingTimeInterval(90),
+            end: start.addingTimeInterval(120),
+            state: .active,
+            appName: "Notes",
+            categoryID: CategoryID.personal.rawValue
+        )
+        var segments = [previous, selected, next]
+
+        let mergedPrevious = reducer.mergeSegment(id: selected.id, withAdjacentID: previous.id, in: &segments)
+
+        XCTAssertEqual(segments.count, 2)
+        XCTAssertEqual(mergedPrevious?.id, selected.id)
+        XCTAssertEqual(mergedPrevious?.start, previous.start)
+        XCTAssertEqual(mergedPrevious?.end, selected.end)
+        XCTAssertEqual(mergedPrevious?.appName, "Xcode")
+        XCTAssertEqual(mergedPrevious?.manualCategoryID, CategoryID.work.rawValue)
+
+        let mergedNext = reducer.mergeSegment(id: selected.id, withAdjacentID: next.id, in: &segments)
+
+        XCTAssertEqual(segments.count, 1)
+        XCTAssertEqual(mergedNext?.id, selected.id)
+        XCTAssertEqual(mergedNext?.start, previous.start)
+        XCTAssertEqual(mergedNext?.end, next.end)
+        XCTAssertEqual(mergedNext?.appName, "Xcode")
+    }
+
+    func testMergeSegmentRejectsNonAdjacentSegments() {
+        let reducer = ActivitySegmentReducer()
+        let start = Date(timeIntervalSince1970: 100)
+        let first = ActivitySegment(start: start, end: start.addingTimeInterval(10), state: .active, appName: "A", categoryID: CategoryID.work.rawValue)
+        let middle = ActivitySegment(start: start.addingTimeInterval(10), end: start.addingTimeInterval(20), state: .active, appName: "B", categoryID: CategoryID.work.rawValue)
+        let last = ActivitySegment(start: start.addingTimeInterval(20), end: start.addingTimeInterval(30), state: .active, appName: "C", categoryID: CategoryID.work.rawValue)
+        var segments = [first, middle, last]
+
+        XCTAssertNil(reducer.mergeSegment(id: first.id, withAdjacentID: last.id, in: &segments))
+        XCTAssertEqual(segments, [first, middle, last])
+    }
+
     func testManualSegmentEditDoesNotChangeFutureSegmentClassification() {
         let reducer = ActivitySegmentReducer()
         let start = Date(timeIntervalSince1970: 100)

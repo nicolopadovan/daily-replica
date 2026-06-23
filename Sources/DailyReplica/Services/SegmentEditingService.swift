@@ -35,10 +35,55 @@ final class SegmentEditingService {
         persistSegment(id: segmentID)
     }
 
+    func splitSegment(segmentID: UUID, at splitTime: Date) -> ActivitySegment? {
+        guard let split = reducer.splitSegment(id: segmentID, at: splitTime, in: &state.todaySegments) else {
+            return nil
+        }
+        persist(split.left)
+        persist(split.right)
+        return split.right
+    }
+
+    func mergeSegment(segmentID: UUID, withAdjacentSegmentID adjacentID: UUID) -> ActivitySegment? {
+        guard let merged = reducer.mergeSegment(id: segmentID, withAdjacentID: adjacentID, in: &state.todaySegments) else {
+            return nil
+        }
+        persist(merged)
+        do {
+            try store.deleteSegment(id: adjacentID)
+        } catch {
+            state.lastError = error.localizedDescription
+        }
+        return merged
+    }
+
+    func segment(before segmentID: UUID) -> ActivitySegment? {
+        guard let index = state.todaySegments.firstIndex(where: { $0.id == segmentID }),
+              index > state.todaySegments.startIndex else {
+            return nil
+        }
+        return state.todaySegments[state.todaySegments.index(before: index)]
+    }
+
+    func segment(after segmentID: UUID) -> ActivitySegment? {
+        guard let index = state.todaySegments.firstIndex(where: { $0.id == segmentID }) else {
+            return nil
+        }
+        let nextIndex = state.todaySegments.index(after: index)
+        guard nextIndex < state.todaySegments.endIndex else {
+            return nil
+        }
+        return state.todaySegments[nextIndex]
+    }
+
     private func persistSegment(id: UUID) {
         guard let segment = state.todaySegments.first(where: { $0.id == id }) else {
             return
         }
+        persist(segment)
+    }
+
+    private func persist(_ segment: ActivitySegment) {
         do {
             try store.upsertSegment(segment)
         } catch {

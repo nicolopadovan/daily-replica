@@ -10,6 +10,7 @@ protocol ActivityStore: AnyObject {
     func upsertRule(_ rule: ClassificationRule) throws
     func deleteRule(id: UUID) throws
     func upsertSegment(_ segment: ActivitySegment) throws
+    func deleteSegment(id: UUID) throws
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment]
 }
 

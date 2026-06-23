@@ -56,4 +56,35 @@ final class SQLiteActivityStoreTests: XCTestCase {
         XCTAssertEqual(segments.first?.manualContextID, context.id)
         XCTAssertEqual(segments.first?.manualNote, "Actually testing")
     }
+
+    func testDeleteSegmentRemovesItFromFetchResults() throws {
+        let store = try SQLiteActivityStore(path: ":memory:")
+        let start = Date(timeIntervalSince1970: 100)
+        let createdAt = Date(timeIntervalSince1970: 50)
+        let first = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(60),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue,
+            createdAt: createdAt,
+            updatedAt: createdAt
+        )
+        let second = ActivitySegment(
+            start: start.addingTimeInterval(60),
+            end: start.addingTimeInterval(120),
+            state: .active,
+            appName: "Safari",
+            categoryID: CategoryID.browsing.rawValue,
+            createdAt: createdAt,
+            updatedAt: createdAt
+        )
+
+        try store.upsertSegment(first)
+        try store.upsertSegment(second)
+        try store.deleteSegment(id: first.id)
+
+        let segments = try store.fetchSegments(in: DateInterval(start: start, duration: 120))
+        XCTAssertEqual(segments, [second])
+    }
 }

@@ -180,6 +180,7 @@ private final class PreviewActivityStore: ActivityStore {
     func upsertRule(_ rule: ClassificationRule) throws { rules.append(rule) }
     func deleteRule(id: UUID) throws { rules.removeAll { $0.id == id } }
     func upsertSegment(_ segment: ActivitySegment) throws { segments.append(segment) }
+    func deleteSegment(id: UUID) throws { segments.removeAll { $0.id == id } }
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] { segments }
 }
 

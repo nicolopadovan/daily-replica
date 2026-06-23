@@ -61,6 +61,64 @@ final class SegmentEditingServiceTests: XCTestCase {
         XCTAssertEqual(harness.store.upsertedSegments.count, 2)
         XCTAssertEqual(harness.store.upsertedSegments.last?.contextName, "Client")
     }
+
+    func testSplitsSegmentAndPersistsBothHalves() {
+        let harness = AppHarness()
+        let start = Date(timeIntervalSince1970: 100)
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(80),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.todaySegments = [segment]
+
+        let right = harness.segmentEditingService.splitSegment(
+            segmentID: segment.id,
+            at: start.addingTimeInterval(30)
+        )
+
+        XCTAssertEqual(harness.state.todaySegments.count, 2)
+        XCTAssertEqual(harness.state.todaySegments[0].id, segment.id)
+        XCTAssertEqual(harness.state.todaySegments[0].end, start.addingTimeInterval(30))
+        XCTAssertEqual(right?.start, start.addingTimeInterval(30))
+        XCTAssertEqual(right?.end, start.addingTimeInterval(80))
+        XCTAssertEqual(harness.store.upsertedSegments.map(\.id), harness.state.todaySegments.map(\.id))
+    }
+
+    func testMergesSelectedSegmentWithNeighborAndDeletesNeighbor() {
+        let harness = AppHarness()
+        let start = Date(timeIntervalSince1970: 100)
+        let previous = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(30),
+            state: .active,
+            appName: "Safari",
+            categoryID: CategoryID.browsing.rawValue
+        )
+        let selected = ActivitySegment(
+            start: start.addingTimeInterval(30),
+            end: start.addingTimeInterval(90),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.todaySegments = [previous, selected]
+
+        let merged = harness.segmentEditingService.mergeSegment(
+            segmentID: selected.id,
+            withAdjacentSegmentID: previous.id
+        )
+
+        XCTAssertEqual(harness.state.todaySegments.count, 1)
+        XCTAssertEqual(harness.state.todaySegments.first, merged)
+        XCTAssertEqual(merged?.id, selected.id)
+        XCTAssertEqual(merged?.start, previous.start)
+        XCTAssertEqual(merged?.end, selected.end)
+        XCTAssertEqual(harness.store.upsertedSegments.last?.id, selected.id)
+        XCTAssertEqual(harness.store.deletedSegmentIDs, [previous.id])
+    }
 }
 
 @MainActor
@@ -257,6 +315,65 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedSegment?.id, second.id)
     }
 
+    func testTodayViewModelSplitSelectsRightHalf() {
+        let harness = AppHarness()
+        let start = Date(timeIntervalSince1970: 100)
+        let segment = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(100),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.todaySegments = [segment]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService
+        )
+        viewModel.selectSegment(id: segment.id)
+        viewModel.splitTime = start.addingTimeInterval(40)
+
+        viewModel.splitSelectedSegment()
+
+        XCTAssertEqual(harness.state.todaySegments.count, 2)
+        XCTAssertEqual(viewModel.selectedSegmentID, harness.state.todaySegments[1].id)
+        XCTAssertEqual(viewModel.selectedSegment?.start, start.addingTimeInterval(40))
+    }
+
+    func testTodayViewModelMergePreservesSelectedSegment() {
+        let harness = AppHarness()
+        let start = Date(timeIntervalSince1970: 100)
+        let previous = ActivitySegment(
+            start: start,
+            end: start.addingTimeInterval(40),
+            state: .active,
+            appName: "Safari",
+            categoryID: CategoryID.browsing.rawValue
+        )
+        let selected = ActivitySegment(
+            start: start.addingTimeInterval(40),
+            end: start.addingTimeInterval(100),
+            state: .active,
+            appName: "Xcode",
+            categoryID: CategoryID.work.rawValue
+        )
+        harness.state.todaySegments = [previous, selected]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService
+        )
+        viewModel.selectSegment(id: selected.id)
+
+        viewModel.mergeSelectedSegmentWithPrevious()
+
+        XCTAssertEqual(harness.state.todaySegments.count, 1)
+        XCTAssertEqual(viewModel.selectedSegmentID, selected.id)
+        XCTAssertEqual(viewModel.selectedSegment?.start, previous.start)
+        XCTAssertEqual(viewModel.selectedSegment?.end, selected.end)
+    }
+
     func testSettingsViewModelCreatesCategoryAndClearsField() {
         let harness = AppHarness()
         let viewModel = SettingsViewModel(state: harness.state, libraryService: harness.libraryService)
@@ -340,6 +457,7 @@ private final class InMemoryActivityStore: ActivityStore {
     var rules: [ClassificationRule] = []
     var segments: [ActivitySegment] = []
     var upsertedSegments: [ActivitySegment] = []
+    var deletedSegmentIDs: [UUID] = []
 
     func fetchCategories() throws -> [CategoryDefinition] {
         categories
@@ -376,6 +494,11 @@ private final class InMemoryActivityStore: ActivityStore {
         segments.removeAll { $0.id == segment.id }
         segments.append(segment)
         upsertedSegments.append(segment)
+    }
+
+    func deleteSegment(id: UUID) throws {
+        segments.removeAll { $0.id == id }
+        deletedSegmentIDs.append(id)
     }
 
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] {
