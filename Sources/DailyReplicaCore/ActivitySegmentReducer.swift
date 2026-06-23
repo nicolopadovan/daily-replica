@@ -1,0 +1,69 @@
+import Foundation
+
+public struct ActivitySegmentReducer: Sendable {
+    public init() {}
+
+    public func ingest(_ sample: ClassifiedSample, into segments: inout [ActivitySegment]) {
+        let now = sample.focus.timestamp
+
+        if segments.isEmpty {
+            segments.append(Self.makeSegment(from: sample, start: now, end: now))
+            return
+        }
+
+        guard var last = segments.popLast() else {
+            return
+        }
+
+        if last.matchesContinuation(sample) {
+            last.end = max(last.end, now)
+            last.updatedAt = now
+            segments.append(last)
+            return
+        }
+
+        if now > last.end {
+            last.end = now
+            last.updatedAt = now
+        }
+        segments.append(last)
+        segments.append(Self.makeSegment(from: sample, start: now, end: now))
+    }
+
+    public func editSegment(
+        id: UUID,
+        in segments: inout [ActivitySegment],
+        categoryID: String? = nil,
+        context: ProjectContext? = nil,
+        note: String? = nil,
+        editedAt: Date = Date()
+    ) {
+        guard let index = segments.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        segments[index] = segments[index].applyingManualEdit(
+            categoryID: categoryID,
+            context: context,
+            note: note,
+            editedAt: editedAt
+        )
+    }
+
+    public static func makeSegment(from sample: ClassifiedSample, start: Date, end: Date) -> ActivitySegment {
+        ActivitySegment(
+            start: start,
+            end: end,
+            state: sample.focus.state,
+            appBundleID: sample.focus.appBundleID,
+            appName: sample.focus.appName,
+            windowTitle: sample.focus.windowTitle,
+            urlString: sample.focus.urlString,
+            urlHost: sample.focus.urlHost,
+            categoryID: sample.categoryID,
+            contextID: sample.contextID,
+            contextName: sample.contextName,
+            createdAt: start,
+            updatedAt: end
+        )
+    }
+}
