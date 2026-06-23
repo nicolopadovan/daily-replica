@@ -2,14 +2,7 @@ import DailyReplicaCore
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject private var model: AppModel
-    @State private var selectedSection = SettingsSection.categories
-    @State private var categoryName = ""
-    @State private var contextName = ""
-    @State private var contextCategoryID = CategoryID.work.rawValue
-    @State private var ruleKind = ClassificationRuleKind.appBundleID
-    @State private var rulePattern = ""
-    @State private var ruleCategoryID = CategoryID.work.rawValue
+    @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
         HStack(spacing: 0) {
@@ -36,18 +29,18 @@ struct SettingsView: View {
 
             ForEach(SettingsSection.allCases) { section in
                 Button {
-                    selectedSection = section
+                    viewModel.selectedSection = section
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: section.systemImage)
                             .frame(width: 18)
-                            .foregroundStyle(selectedSection == section ? CalmPalette.cypress : .secondary)
+                            .foregroundStyle(viewModel.selectedSection == section ? CalmPalette.cypress : .secondary)
                         Text(section.title)
                         Spacer()
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
-                    .background(selectedSection == section ? CalmPalette.cypress.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(viewModel.selectedSection == section ? CalmPalette.cypress.opacity(0.11) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -61,7 +54,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var selectedPane: some View {
-        switch selectedSection {
+        switch viewModel.selectedSection {
         case .categories:
             categoriesPane
         case .contexts:
@@ -80,11 +73,10 @@ struct SettingsView: View {
                 subtitle: "Add the words you naturally use for your day."
             ) {
                 HStack(spacing: 10) {
-                    TextField("Example: Reading", text: $categoryName)
+                    TextField("Example: Reading", text: $viewModel.categoryName)
                         .textFieldStyle(.roundedBorder)
                     Button {
-                        model.addCategory(name: categoryName)
-                        categoryName = ""
+                        viewModel.createCategory()
                     } label: {
                         Label("Create category", systemImage: "plus.circle.fill")
                     }
@@ -93,9 +85,9 @@ struct SettingsView: View {
                 }
             }
 
-            JournalSectionHeader(title: "Existing categories", detail: "\(model.categories.count)")
+            JournalSectionHeader(title: "Existing categories", detail: "\(viewModel.categories.count)")
             VStack(spacing: 8) {
-                ForEach(model.categories) { category in
+                ForEach(viewModel.categories) { category in
                     PreferenceRow(
                         icon: "circle.fill",
                         tint: CalmPalette.categoryColor(category.id),
@@ -114,18 +106,17 @@ struct SettingsView: View {
                 subtitle: "Examples: Client website, University paper, House admin."
             ) {
                 VStack(alignment: .leading, spacing: 10) {
-                    TextField("Project name", text: $contextName)
+                    TextField("Project name", text: $viewModel.contextName)
                         .textFieldStyle(.roundedBorder)
                     HStack {
-                        Picker("Usual category", selection: $contextCategoryID) {
-                            ForEach(assignableCategories) { category in
+                        Picker("Usual category", selection: $viewModel.contextCategoryID) {
+                            ForEach(viewModel.assignableCategories) { category in
                                 Text(category.name).tag(category.id)
                             }
                         }
                         .frame(width: 220)
                         Button {
-                            model.addContext(name: contextName, defaultCategoryID: contextCategoryID)
-                            contextName = ""
+                            viewModel.createContext()
                         } label: {
                             Label("Create project", systemImage: "plus.circle.fill")
                         }
@@ -135,22 +126,22 @@ struct SettingsView: View {
                 }
             }
 
-            JournalSectionHeader(title: "Your projects", detail: "\(model.contexts.count)")
+            JournalSectionHeader(title: "Your projects", detail: "\(viewModel.contexts.count)")
             VStack(spacing: 8) {
-                ForEach(model.contexts) { context in
+                ForEach(viewModel.contexts) { context in
                     HStack {
                         PreferenceRow(
                             icon: "folder.fill",
                             tint: CalmPalette.categoryColor(context.defaultCategoryID ?? CategoryID.unclassified.rawValue),
                             title: context.name,
-                            subtitle: context.defaultCategoryID.map(model.displayName) ?? "No default category"
+                            subtitle: context.defaultCategoryID.map(viewModel.displayName) ?? "No default category"
                         )
                         Spacer()
                         Button("Work on this") {
-                            model.setCurrentContext(id: context.id)
+                            viewModel.setCurrentContext(id: context.id)
                         }
                         Button("Archive") {
-                            model.archiveContext(id: context.id)
+                            viewModel.archiveContext(id: context.id)
                         }
                     }
                     .padding(.trailing, 10)
@@ -168,27 +159,26 @@ struct SettingsView: View {
             ) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
-                        Picker("Sort by", selection: $ruleKind) {
+                        Picker("Sort by", selection: $viewModel.ruleKind) {
                             Text("App").tag(ClassificationRuleKind.appBundleID)
                             Text("Chrome website").tag(ClassificationRuleKind.chromeHost)
                         }
                         .frame(width: 170)
 
-                        TextField(ruleKind == .appBundleID ? "Example: com.apple.dt.Xcode" : "Example: github.com", text: $rulePattern)
+                        TextField(viewModel.ruleKind == .appBundleID ? "Example: com.apple.dt.Xcode" : "Example: github.com", text: $viewModel.rulePattern)
                             .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
-                        Picker("Put it in", selection: $ruleCategoryID) {
-                            ForEach(assignableCategories) { category in
+                        Picker("Put it in", selection: $viewModel.ruleCategoryID) {
+                            ForEach(viewModel.assignableCategories) { category in
                                 Text(category.name).tag(category.id)
                             }
                         }
                         .frame(width: 220)
 
                         Button {
-                            model.addRule(kind: ruleKind, pattern: rulePattern, categoryID: ruleCategoryID)
-                            rulePattern = ""
+                            viewModel.createRule()
                         } label: {
                             Label("Create rule", systemImage: "plus.circle.fill")
                         }
@@ -196,25 +186,25 @@ struct SettingsView: View {
                         .tint(CalmPalette.cypress)
                     }
 
-                    Text(ruleKind == .appBundleID ? "Tip: app rules use bundle IDs, such as com.google.Chrome." : "Tip: website rules use the domain, such as github.com.")
+                    Text(viewModel.ruleKind == .appBundleID ? "Tip: app rules use bundle IDs, such as com.google.Chrome." : "Tip: website rules use the domain, such as github.com.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            JournalSectionHeader(title: "Existing rules", detail: "\(model.rules.count)")
+            JournalSectionHeader(title: "Existing rules", detail: "\(viewModel.rules.count)")
             VStack(spacing: 8) {
-                ForEach(model.rules) { rule in
+                ForEach(viewModel.rules) { rule in
                     HStack {
                         PreferenceRow(
                             icon: rule.kind == .appBundleID ? "app.fill" : "globe",
                             tint: CalmPalette.categoryColor(rule.categoryID),
                             title: rule.pattern,
-                            subtitle: "\(rule.kind == .appBundleID ? "App" : "Chrome website") goes to \(model.displayName(for: rule.categoryID))"
+                            subtitle: "\(rule.kind == .appBundleID ? "App" : "Chrome website") goes to \(viewModel.displayName(for: rule.categoryID))"
                         )
                         Spacer()
                         Button("Delete") {
-                            model.deleteRule(id: rule.id)
+                            viewModel.deleteRule(id: rule.id)
                         }
                     }
                     .padding(.trailing, 10)
@@ -228,9 +218,9 @@ struct SettingsView: View {
         PreferencePane(title: "Permissions", subtitle: "Local-only access that makes the journal more precise.") {
             VStack(spacing: 10) {
                 PreferenceRow(
-                    icon: model.accessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
-                    tint: model.accessibilityTrusted ? CalmPalette.cypress : CalmPalette.persimmon,
-                    title: model.accessibilityTrusted ? "Window titles enabled" : "Window titles disabled",
+                    icon: viewModel.accessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                    tint: viewModel.accessibilityTrusted ? CalmPalette.cypress : CalmPalette.persimmon,
+                    title: viewModel.accessibilityTrusted ? "Window titles enabled" : "Window titles disabled",
                     subtitle: "Accessibility lets Daily Replica read the focused window title."
                 )
 
@@ -247,43 +237,13 @@ struct SettingsView: View {
             }
 
             Button("Request Accessibility permission") {
-                model.requestAccessibilityPermission()
+                viewModel.requestAccessibilityPermission()
             }
             .buttonStyle(.borderedProminent)
             .tint(CalmPalette.cypress)
         }
     }
 
-    private var assignableCategories: [CategoryDefinition] {
-        model.categories.filter { $0.id != CategoryID.inactive.rawValue }
-    }
-}
-
-private enum SettingsSection: String, CaseIterable, Identifiable {
-    case categories
-    case contexts
-    case rules
-    case permissions
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .categories: "Categories"
-        case .contexts: "Projects"
-        case .rules: "Auto-sort"
-        case .permissions: "Permissions"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .categories: "square.grid.2x2.fill"
-        case .contexts: "folder.fill"
-        case .rules: "tag.fill"
-        case .permissions: "lock.shield.fill"
-        }
-    }
 }
 
 private struct PreferencePane<Content: View>: View {
@@ -358,3 +318,48 @@ private struct PreferenceRow: View {
         .padding(10)
     }
 }
+
+#if DEBUG
+#Preview("Settings Categories") {
+    SettingsView(viewModel: PreviewFactory.settingsViewModel(section: .categories))
+        .frame(width: 820, height: 620)
+}
+
+#Preview("Settings Rules") {
+    SettingsView(viewModel: PreviewFactory.settingsViewModel(section: .rules))
+        .frame(width: 820, height: 620)
+}
+
+#Preview("Preference Pane") {
+    PreferencePane(title: "Categories", subtitle: "Labels used to organize your day.") {
+        PreferenceRow(
+            icon: "tag.fill",
+            tint: CalmPalette.cypress,
+            title: "Work",
+            subtitle: "Built in"
+        )
+    }
+    .padding()
+    .frame(width: 480)
+}
+
+#Preview("Create Panel") {
+    CreatePanel(title: "Create project", subtitle: "Add the context you are working on.") {
+        TextField("Project name", text: .constant("Daily Replica"))
+            .textFieldStyle(.roundedBorder)
+    }
+    .padding()
+    .frame(width: 480)
+}
+
+#Preview("Preference Row") {
+    PreferenceRow(
+        icon: "folder.fill",
+        tint: CalmPalette.signalBlue,
+        title: "Daily Replica",
+        subtitle: "Defaults to Work"
+    )
+    .padding()
+    .frame(width: 420)
+}
+#endif

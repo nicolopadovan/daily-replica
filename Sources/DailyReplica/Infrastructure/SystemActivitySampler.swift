@@ -4,7 +4,7 @@ import DailyReplicaCore
 import Foundation
 import IOKit
 
-struct SystemActivitySampler {
+struct SystemActivitySampler: ActivitySampling {
     private let idleClassifier: IdleClassifier
     private let chromeURLReader = ChromeURLReader()
 
@@ -48,8 +48,8 @@ struct SystemActivitySampler {
     }
 }
 
-enum PermissionService {
-    static func isAccessibilityTrusted(prompt: Bool) -> Bool {
+struct AccessibilityPermissionChecker: PermissionChecking {
+    func isAccessibilityTrusted(prompt: Bool) -> Bool {
         let options = ["AXTrustedCheckOptionPrompt": prompt] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
     }

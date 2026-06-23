@@ -2,16 +2,7 @@ import DailyReplicaCore
 import SwiftUI
 
 struct TodayView: View {
-    @EnvironmentObject private var model: AppModel
-    @State private var selectedSegmentID: UUID?
-
-    private var selectedSegment: ActivitySegment? {
-        if let selectedSegmentID,
-           let segment = model.todaySegments.first(where: { $0.id == selectedSegmentID }) {
-            return segment
-        }
-        return model.todaySegments.last
-    }
+    @ObservedObject var viewModel: TodayViewModel
 
     var body: some View {
         NavigationSplitView {
@@ -21,16 +12,16 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     JournalSectionHeader(title: "Day ribbon", detail: Date().formatted(date: .abbreviated, time: .omitted))
                     DayRibbonView(
-                        entries: model.todayRibbonEntries,
-                        selectedSegmentID: selectedSegment?.id,
+                        entries: viewModel.todayRibbonEntries,
+                        selectedSegmentID: viewModel.selectedSegment?.id,
                         height: 20,
-                        onSelect: { selectedSegmentID = $0 }
+                        onSelect: { viewModel.selectSegment(id: $0) }
                     )
                     ribbonLegend
                 }
                 .journalSurface()
 
-                if model.todaySegments.isEmpty {
+                if viewModel.todaySegments.isEmpty {
                     EmptyJournalState(
                         title: "No activity yet",
                         message: "Start tracking from the menu bar and your day will appear here.",
@@ -44,19 +35,15 @@ struct TodayView: View {
             .background(CalmPalette.porcelain.opacity(0.55))
             .navigationSplitViewColumnWidth(min: 640, ideal: 780)
         } detail: {
-            SegmentInspector(segment: selectedSegment)
-                .environmentObject(model)
+            SegmentInspector(viewModel: viewModel, segment: viewModel.selectedSegment)
                 .frame(minWidth: 320, maxWidth: 400, maxHeight: .infinity)
                 .background(.background)
         }
         .onAppear {
-            model.reloadToday()
-            selectedSegmentID = selectedSegmentID ?? model.todaySegments.last?.id
+            viewModel.reloadToday()
         }
-        .onChange(of: model.todaySegments.count) { _, _ in
-            if selectedSegmentID == nil {
-                selectedSegmentID = model.todaySegments.last?.id
-            }
+        .onChange(of: viewModel.todaySegments.count) { _, _ in
+            viewModel.selectLatestIfNeeded()
         }
     }
 
@@ -66,7 +53,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Today")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
-                    Text(model.currentContext?.name ?? "No current project")
+                    Text(viewModel.currentContextName)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -74,17 +61,17 @@ struct TodayView: View {
                 Spacer()
 
                 CategoryPill(
-                    title: model.isTracking ? "Tracking" : "Paused",
-                    categoryID: model.isTracking ? CategoryID.work.rawValue : CategoryID.unclassified.rawValue,
-                    systemImage: model.isTracking ? "record.circle.fill" : "pause.circle.fill"
+                    title: viewModel.isTracking ? "Tracking" : "Paused",
+                    categoryID: viewModel.isTracking ? CategoryID.work.rawValue : CategoryID.unclassified.rawValue,
+                    systemImage: viewModel.isTracking ? "record.circle.fill" : "pause.circle.fill"
                 )
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
-                MetricTile(title: "Tracked", value: DurationFormatter.format(model.todaySummary.totalDuration), tint: CalmPalette.cypress, symbol: "clock")
-                MetricTile(title: "Active", value: DurationFormatter.format(model.todaySummary.activeDuration), tint: CalmPalette.signalBlue, symbol: "bolt.fill")
-                MetricTile(title: "Inactive", value: DurationFormatter.format(model.todaySummary.inactiveDuration), tint: CalmPalette.graphite, symbol: "moon.zzz.fill")
-                MetricTile(title: "Unsorted", value: DurationFormatter.format(model.todaySummary.unclassifiedDuration), tint: CalmPalette.persimmon, symbol: "tag.slash.fill")
+                MetricTile(title: "Tracked", value: DurationFormatter.format(viewModel.todaySummary.totalDuration), tint: CalmPalette.cypress, symbol: "clock")
+                MetricTile(title: "Active", value: DurationFormatter.format(viewModel.todaySummary.activeDuration), tint: CalmPalette.signalBlue, symbol: "bolt.fill")
+                MetricTile(title: "Inactive", value: DurationFormatter.format(viewModel.todaySummary.inactiveDuration), tint: CalmPalette.graphite, symbol: "moon.zzz.fill")
+                MetricTile(title: "Unsorted", value: DurationFormatter.format(viewModel.todaySummary.unclassifiedDuration), tint: CalmPalette.persimmon, symbol: "tag.slash.fill")
             }
         }
         .journalSurface(padding: 18)
@@ -92,10 +79,10 @@ struct TodayView: View {
 
     private var ribbonLegend: some View {
         HStack(spacing: 12) {
-            ForEach(model.todaySummary.topCategories(limit: 5)) { item in
+            ForEach(viewModel.todaySummary.topCategories(limit: 5)) { item in
                 HStack(spacing: 5) {
                     CategoryDot(categoryID: item.categoryID)
-                    Text(model.displayName(for: item.categoryID))
+                    Text(viewModel.displayName(for: item.categoryID))
                         .lineLimit(1)
                     Text(DurationFormatter.format(item.duration))
                         .foregroundStyle(.secondary)
@@ -109,13 +96,13 @@ struct TodayView: View {
     private var timeline: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(model.todaySegments.reversed()) { segment in
+                ForEach(viewModel.todaySegments.reversed()) { segment in
                     TimelineSegmentRow(
+                        viewModel: viewModel,
                         segment: segment,
-                        isSelected: selectedSegment?.id == segment.id,
-                        onSelect: { selectedSegmentID = segment.id }
+                        isSelected: viewModel.selectedSegment?.id == segment.id,
+                        onSelect: { viewModel.selectSegment(id: segment.id) }
                     )
-                    .environmentObject(model)
                 }
             }
             .padding(.bottom, 12)
@@ -124,8 +111,7 @@ struct TodayView: View {
 }
 
 struct TimelineSegmentRow: View {
-    @EnvironmentObject private var model: AppModel
-    @Environment(\.openWindow) private var openWindow
+    @ObservedObject var viewModel: TodayViewModel
     let segment: ActivitySegment
     let isSelected: Bool
     let onSelect: () -> Void
@@ -210,17 +196,17 @@ struct TimelineSegmentRow: View {
 
     private var categoryMenu: some View {
         Menu {
-            ForEach(model.categories) { category in
+            ForEach(viewModel.categories) { category in
                 Button(category.name) {
-                    model.editSegmentCategory(segmentID: segment.id, categoryID: category.id)
+                    viewModel.editSegmentCategory(segmentID: segment.id, categoryID: category.id)
                 }
             }
             Divider()
             Button("Create new category...") {
-                openWindow(id: "settings")
+                viewModel.openSettings()
             }
         } label: {
-            CategoryPill(title: model.displayName(for: segment.categoryID), categoryID: segment.categoryID)
+            CategoryPill(title: viewModel.displayName(for: segment.categoryID), categoryID: segment.categoryID)
         }
         .menuStyle(.borderlessButton)
     }
@@ -228,16 +214,16 @@ struct TimelineSegmentRow: View {
     private var contextMenu: some View {
         Menu {
             Button("No project") {
-                model.editSegmentContext(segmentID: segment.id, contextID: nil)
+                viewModel.editSegmentContext(segmentID: segment.id, contextID: nil)
             }
-            ForEach(model.contexts) { context in
+            ForEach(viewModel.contexts) { context in
                 Button(context.name) {
-                    model.editSegmentContext(segmentID: segment.id, contextID: context.id)
+                    viewModel.editSegmentContext(segmentID: segment.id, contextID: context.id)
                 }
             }
             Divider()
             Button("Create new project...") {
-                openWindow(id: "settings")
+                viewModel.openSettings()
             }
         } label: {
             Label(segment.contextName ?? "No project", systemImage: "folder.fill")
@@ -251,12 +237,7 @@ struct TimelineSegmentRow: View {
 }
 
 struct SegmentInspector: View {
-    @EnvironmentObject private var model: AppModel
-    @State private var isCreatingCategory = false
-    @State private var isCreatingProject = false
-    @State private var newCategoryName = ""
-    @State private var newProjectName = ""
-    @State private var newProjectCategoryID = CategoryID.work.rawValue
+    @ObservedObject var viewModel: TodayViewModel
     let segment: ActivitySegment?
 
     var body: some View {
@@ -311,7 +292,7 @@ struct SegmentInspector: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Picker("Category", selection: categoryBinding(for: segment)) {
-                    ForEach(model.categories) { category in
+                    ForEach(viewModel.categories) { category in
                         Text(category.name).tag(category.id)
                     }
                 }
@@ -323,7 +304,7 @@ struct SegmentInspector: View {
                     .foregroundStyle(.secondary)
                 Picker("Project", selection: contextBinding(for: segment)) {
                     Text("No project").tag("")
-                    ForEach(model.contexts) { context in
+                    ForEach(viewModel.contexts) { context in
                         Text(context.name).tag(context.id.uuidString)
                     }
                 }
@@ -331,34 +312,29 @@ struct SegmentInspector: View {
 
             HStack {
                 Button {
-                    isCreatingCategory.toggle()
+                    viewModel.toggleCategoryCreation()
                 } label: {
                     Label("Create category", systemImage: "plus.circle")
                 }
                 Button {
-                    isCreatingProject.toggle()
+                    viewModel.toggleProjectCreation()
                 } label: {
                     Label("Create project", systemImage: "plus.circle")
                 }
             }
             .font(.caption)
 
-            if isCreatingCategory {
+            if viewModel.isCreatingCategory {
                 VStack(alignment: .leading, spacing: 8) {
-                    TextField("New category name", text: $newCategoryName)
+                    TextField("New category name", text: $viewModel.newCategoryName)
                         .textFieldStyle(.roundedBorder)
                     HStack {
                         Button("Cancel") {
-                            isCreatingCategory = false
-                            newCategoryName = ""
+                            viewModel.cancelCategoryCreation()
                         }
                         Spacer()
                         Button("Create and use") {
-                            if let category = model.addCategory(name: newCategoryName) {
-                                model.editSegmentCategory(segmentID: segment.id, categoryID: category.id)
-                            }
-                            isCreatingCategory = false
-                            newCategoryName = ""
+                            viewModel.createCategoryAndUse(segmentID: segment.id)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(CalmPalette.cypress)
@@ -368,27 +344,22 @@ struct SegmentInspector: View {
                 .background(CalmPalette.mist.opacity(0.4), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
-            if isCreatingProject {
+            if viewModel.isCreatingProject {
                 VStack(alignment: .leading, spacing: 8) {
-                    TextField("New project name", text: $newProjectName)
+                    TextField("New project name", text: $viewModel.newProjectName)
                         .textFieldStyle(.roundedBorder)
-                    Picker("Usual category", selection: $newProjectCategoryID) {
-                        ForEach(model.categories.filter { $0.id != CategoryID.inactive.rawValue }) { category in
+                    Picker("Usual category", selection: $viewModel.newProjectCategoryID) {
+                        ForEach(viewModel.categories.filter { $0.id != CategoryID.inactive.rawValue }) { category in
                             Text(category.name).tag(category.id)
                         }
                     }
                     HStack {
                         Button("Cancel") {
-                            isCreatingProject = false
-                            newProjectName = ""
+                            viewModel.cancelProjectCreation()
                         }
                         Spacer()
                         Button("Create and use") {
-                            if let context = model.addContext(name: newProjectName, defaultCategoryID: newProjectCategoryID) {
-                                model.editSegmentContext(segmentID: segment.id, contextID: context.id)
-                            }
-                            isCreatingProject = false
-                            newProjectName = ""
+                            viewModel.createProjectAndUse(segmentID: segment.id)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(CalmPalette.cypress)
@@ -405,7 +376,7 @@ struct SegmentInspector: View {
         VStack(alignment: .leading, spacing: 12) {
             JournalSectionHeader(title: "Details")
             InspectorRow(label: "Time", value: "\(segment.start.formatted(date: .omitted, time: .shortened)) - \(segment.end.formatted(date: .omitted, time: .shortened))")
-            InspectorRow(label: "Category", value: model.displayName(for: segment.categoryID))
+            InspectorRow(label: "Category", value: viewModel.displayName(for: segment.categoryID))
             InspectorRow(label: "Project", value: segment.contextName ?? "None")
             if let bundleID = segment.appBundleID {
                 InspectorRow(label: "Bundle", value: bundleID)
@@ -423,14 +394,14 @@ struct SegmentInspector: View {
     private func categoryBinding(for segment: ActivitySegment) -> Binding<String> {
         Binding(
             get: { segment.categoryID },
-            set: { model.editSegmentCategory(segmentID: segment.id, categoryID: $0) }
+            set: { viewModel.editSegmentCategory(segmentID: segment.id, categoryID: $0) }
         )
     }
 
     private func contextBinding(for segment: ActivitySegment) -> Binding<String> {
         Binding(
             get: { segment.contextID?.uuidString ?? "" },
-            set: { model.editSegmentContext(segmentID: segment.id, contextID: UUID(uuidString: $0)) }
+            set: { viewModel.editSegmentContext(segmentID: segment.id, contextID: UUID(uuidString: $0)) }
         )
     }
 }
@@ -467,3 +438,32 @@ enum DurationFormatter {
         return "\(remainingSeconds)s"
     }
 }
+
+#if DEBUG
+#Preview("Today") {
+    TodayView(viewModel: PreviewFactory.todayViewModel())
+        .frame(width: 1_000, height: 680)
+}
+
+#Preview("Timeline Segment Row") {
+    TimelineSegmentRow(
+        viewModel: PreviewFactory.todayViewModel(),
+        segment: PreviewFactory.segment(),
+        isSelected: true,
+        onSelect: {}
+    )
+    .padding()
+    .frame(width: 680)
+}
+
+#Preview("Segment Inspector") {
+    SegmentInspector(viewModel: PreviewFactory.todayViewModel(), segment: PreviewFactory.segment())
+        .frame(width: 360, height: 620)
+}
+
+#Preview("Inspector Row") {
+    InspectorRow(label: "Window", value: "Daily Replica - Strict MVVM-C Refactor")
+        .padding()
+        .frame(width: 320)
+}
+#endif

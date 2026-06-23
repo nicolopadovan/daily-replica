@@ -15,6 +15,9 @@ Daily Replica sits in your menu bar and gives you a lightweight timeline of your
 workday. Pick what you are working on, let the app quietly follow along, and
 clean things up later when the day gets messy.
 
+Daily Replica is local-first. Activity data is stored on your Mac, and optional
+macOS permissions are used only to make the local timeline more useful.
+
 ## ✨ Features
 
 - 🕘 Track your day from the menu bar
@@ -46,6 +49,14 @@ and allow Daily Replica from there.
 5. Adjust categories when needed
 
 ## 🛠️ Build From Source
+
+For app development in Xcode, open:
+
+```text
+DailyReplica.xcodeproj
+```
+
+For command-line builds and tests:
 
 ```bash
 swift test
@@ -81,6 +92,14 @@ Not yet. For now, use the release zip.
 
 Issues and pull requests are welcome. If something feels confusing, broken, or
 missing, open an issue first so it can be discussed.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, architecture notes, and
+pull request expectations.
+
+## 🔐 Security
+
+Daily Replica is experimental and has not had a formal security audit. See
+[SECURITY.md](SECURITY.md) for supported versions and vulnerability reporting.
 
 ## 📄 License
 

@@ -3,12 +3,15 @@ import DailyReplicaCore
 import SwiftUI
 
 @MainActor
-final class PromptPanelController {
+final class PromptPanelCoordinator: PromptPresenting {
+    var makeViewModel: ((SmartPrompt) -> SmartPromptViewModel?)?
     private var panel: NSPanel?
 
-    func show(prompt: SmartPrompt, model: AppModel) {
-        let content = SmartPromptView(prompt: prompt)
-            .environmentObject(model)
+    func showPrompt(_ prompt: SmartPrompt) {
+        guard let viewModel = makeViewModel?(prompt) else {
+            return
+        }
+        let content = SmartPromptView(viewModel: viewModel)
             .frame(width: 360)
 
         let hostingController = NSHostingController(rootView: content)
@@ -28,7 +31,7 @@ final class PromptPanelController {
         self.panel = panel
     }
 
-    func close() {
+    func dismissPrompt() {
         panel?.close()
         panel = nil
     }

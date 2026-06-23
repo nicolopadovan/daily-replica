@@ -27,6 +27,7 @@ let package = Package(
         .executableTarget(
             name: "DailyReplica",
             dependencies: ["DailyReplicaCore"],
+            exclude: ["Resources/Info.plist"],
             linkerSettings: [
                 .linkedLibrary("sqlite3")
             ]
@@ -34,6 +35,10 @@ let package = Package(
         .testTarget(
             name: "DailyReplicaCoreTests",
             dependencies: ["DailyReplicaCore"]
+        ),
+        .testTarget(
+            name: "DailyReplicaTests",
+            dependencies: ["DailyReplica"]
         )
     ]
 )

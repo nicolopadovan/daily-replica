@@ -1,12 +1,8 @@
 import DailyReplicaCore
 import SwiftUI
 
-struct MenuBarContentView: View {
-    @EnvironmentObject private var model: AppModel
-    @Environment(\.openWindow) private var openWindow
-    @State private var isCreatingProject = false
-    @State private var newProjectName = ""
-    @State private var newProjectCategoryID = CategoryID.work.rawValue
+struct MenuBarView: View {
+    @ObservedObject var viewModel: MenuBarViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -16,7 +12,7 @@ struct MenuBarContentView: View {
             permissionPanel
             actionBar
 
-            if let lastError = model.lastError {
+            if let lastError = viewModel.lastError {
                 Text(lastError)
                     .font(.caption)
                     .foregroundStyle(CalmPalette.rose)
@@ -32,13 +28,13 @@ struct MenuBarContentView: View {
     private var header: some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(model.isTracking ? CalmPalette.cypress : CalmPalette.graphite)
+                .fill(viewModel.isTracking ? CalmPalette.cypress : CalmPalette.graphite)
                 .frame(width: 9, height: 9)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Daily Replica")
                     .font(.headline)
-                Text(model.isTracking ? "Tracking now" : "Paused")
+                Text(viewModel.isTracking ? "Tracking now" : "Paused")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -46,13 +42,13 @@ struct MenuBarContentView: View {
             Spacer()
 
             Button {
-                model.isTracking ? model.stopTracking() : model.startTracking()
+                viewModel.toggleTracking()
             } label: {
-                Label(model.isTracking ? "Pause" : "Start", systemImage: model.isTracking ? "pause.fill" : "play.fill")
+                Label(viewModel.isTracking ? "Pause" : "Start", systemImage: viewModel.isTracking ? "pause.fill" : "play.fill")
                     .frame(minWidth: 88)
             }
             .buttonStyle(.borderedProminent)
-            .tint(model.isTracking ? CalmPalette.persimmon : CalmPalette.cypress)
+            .tint(viewModel.isTracking ? CalmPalette.persimmon : CalmPalette.cypress)
         }
     }
 
@@ -62,8 +58,8 @@ struct MenuBarContentView: View {
 
             HStack(spacing: 12) {
                 AppIconBadge(
-                    bundleID: model.latestSegment?.appBundleID,
-                    appName: model.latestSegment?.appName,
+                    bundleID: viewModel.latestSegment?.appBundleID,
+                    appName: viewModel.latestSegment?.appName,
                     size: 42
                 )
 
@@ -74,10 +70,10 @@ struct MenuBarContentView: View {
 
                     HStack(spacing: 6) {
                         CategoryPill(
-                            title: model.displayName(for: currentCategoryID),
+                            title: viewModel.displayName(for: currentCategoryID),
                             categoryID: currentCategoryID
                         )
-                        if let host = model.latestSegment?.urlHost {
+                        if let host = viewModel.latestSegment?.urlHost {
                             Text(host)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -95,17 +91,17 @@ struct MenuBarContentView: View {
 
                 Picker("Project", selection: currentContextBinding) {
                     Text("No project").tag("")
-                    ForEach(model.contexts) { context in
+                    ForEach(viewModel.contexts) { context in
                         Text(context.name).tag(context.id.uuidString)
                     }
                 }
                 .pickerStyle(.menu)
 
-                if isCreatingProject {
+                if viewModel.isCreatingProject {
                     createProjectForm
                 } else {
                     Button {
-                        isCreatingProject = true
+                        viewModel.showCreateProject()
                     } label: {
                         Label("Create new project", systemImage: "plus.circle.fill")
                     }
@@ -119,11 +115,11 @@ struct MenuBarContentView: View {
 
     private var createProjectForm: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Project name", text: $newProjectName)
+            TextField("Project name", text: $viewModel.newProjectName)
                 .textFieldStyle(.roundedBorder)
 
-            Picker("Usual category", selection: $newProjectCategoryID) {
-                ForEach(model.categories.filter { $0.id != CategoryID.inactive.rawValue }) { category in
+            Picker("Usual category", selection: $viewModel.newProjectCategoryID) {
+                ForEach(viewModel.categories.filter { $0.id != CategoryID.inactive.rawValue }) { category in
                     Text(category.name).tag(category.id)
                 }
             }
@@ -131,14 +127,11 @@ struct MenuBarContentView: View {
 
             HStack {
                 Button("Cancel") {
-                    isCreatingProject = false
-                    newProjectName = ""
+                    viewModel.cancelCreateProject()
                 }
                 Spacer()
                 Button("Create") {
-                    model.addContext(name: newProjectName, defaultCategoryID: newProjectCategoryID)
-                    newProjectName = ""
-                    isCreatingProject = false
+                    viewModel.createProject()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(CalmPalette.cypress)
@@ -150,14 +143,14 @@ struct MenuBarContentView: View {
 
     private var dayPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            JournalSectionHeader(title: "Today", detail: DurationFormatter.format(model.todaySummary.totalDuration))
+            JournalSectionHeader(title: "Today", detail: DurationFormatter.format(viewModel.todaySummary.totalDuration))
 
-            DayRibbonView(entries: model.todayRibbonEntries, selectedSegmentID: model.latestSegment?.id, height: 14)
+            DayRibbonView(entries: viewModel.todayRibbonEntries, selectedSegmentID: viewModel.latestSegment?.id, height: 14)
 
             HStack(spacing: 8) {
-                MenuMetric(label: "Active", value: DurationFormatter.format(model.todaySummary.activeDuration), tint: CalmPalette.cypress)
-                MenuMetric(label: "Idle", value: DurationFormatter.format(model.todaySummary.inactiveDuration), tint: CalmPalette.graphite)
-                MenuMetric(label: "Unsorted", value: DurationFormatter.format(model.todaySummary.unclassifiedDuration), tint: CalmPalette.persimmon)
+                MenuMetric(label: "Active", value: DurationFormatter.format(viewModel.todaySummary.activeDuration), tint: CalmPalette.cypress)
+                MenuMetric(label: "Idle", value: DurationFormatter.format(viewModel.todaySummary.inactiveDuration), tint: CalmPalette.graphite)
+                MenuMetric(label: "Unsorted", value: DurationFormatter.format(viewModel.todaySummary.unclassifiedDuration), tint: CalmPalette.persimmon)
             }
         }
         .journalSurface()
@@ -165,9 +158,9 @@ struct MenuBarContentView: View {
 
     @ViewBuilder
     private var permissionPanel: some View {
-        if !model.accessibilityTrusted {
+        if !viewModel.accessibilityTrusted {
             Button {
-                model.requestAccessibilityPermission()
+                viewModel.requestAccessibilityPermission()
             } label: {
                 HStack {
                     Image(systemName: "lock.open.trianglebadge.exclamationmark")
@@ -193,22 +186,21 @@ struct MenuBarContentView: View {
     private var actionBar: some View {
         HStack(spacing: 8) {
             Button {
-                model.reloadToday()
-                openWindow(id: "today")
+                viewModel.openToday()
             } label: {
                 Label("Review day", systemImage: "list.bullet.rectangle")
                     .frame(maxWidth: .infinity)
             }
 
             Button {
-                openWindow(id: "settings")
+                viewModel.openSettings()
             } label: {
                 Label("Set up", systemImage: "slider.horizontal.3")
                     .frame(maxWidth: .infinity)
             }
 
             Button {
-                NSApp.terminate(nil)
+                viewModel.quit()
             } label: {
                 Image(systemName: "power")
                     .frame(width: 30)
@@ -218,25 +210,22 @@ struct MenuBarContentView: View {
     }
 
     private var currentTitle: String {
-        if model.latestSegment?.state == .inactive {
-            return "Inactive"
-        }
-        return model.latestSegment?.appName ?? model.lastSampleDescription
+        viewModel.currentTitle
     }
 
     private var currentCategoryID: String {
-        model.latestSegment?.categoryID ?? CategoryID.unclassified.rawValue
+        viewModel.currentCategoryID
     }
 
     private var currentElapsed: String {
-        model.latestSegment == nil ? "--" : DurationFormatter.format(model.latestSegmentElapsed)
+        viewModel.currentElapsed
     }
 
     private var currentContextBinding: Binding<String> {
         Binding(
-            get: { model.currentContextID?.uuidString ?? "" },
+            get: { viewModel.currentContextID?.uuidString ?? "" },
             set: { value in
-                model.setCurrentContext(id: UUID(uuidString: value))
+                viewModel.setCurrentContext(selection: value)
             }
         )
     }
@@ -261,3 +250,19 @@ private struct MenuMetric: View {
         .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
+
+#if DEBUG
+#Preview("Menu Bar") {
+    MenuBarView(viewModel: PreviewFactory.menuBarViewModel())
+}
+
+#Preview("Menu Bar Creating Project") {
+    MenuBarView(viewModel: PreviewFactory.menuBarViewModel(showingCreateProject: true))
+}
+
+#Preview("Menu Metric") {
+    MenuMetric(label: "Active", value: "1h 24m", tint: CalmPalette.cypress)
+        .frame(width: 120)
+        .padding()
+}
+#endif

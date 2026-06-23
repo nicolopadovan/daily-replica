@@ -2,42 +2,39 @@ import DailyReplicaCore
 import SwiftUI
 
 struct SmartPromptView: View {
-    @EnvironmentObject private var model: AppModel
-    @Environment(\.openWindow) private var openWindow
-    let prompt: SmartPrompt
-    @State private var selectedCategoryID = CategoryID.work.rawValue
+    @ObservedObject var viewModel: SmartPromptViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                Image(systemName: prompt.kind == .unclassifiedActivity ? "tag.fill" : "arrow.triangle.branch")
+                Image(systemName: viewModel.iconName)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(prompt.kind == .unclassifiedActivity ? CalmPalette.persimmon : CalmPalette.cypress)
+                    .foregroundStyle(CalmPalette.categoryColor(viewModel.iconCategoryID))
                     .frame(width: 36, height: 36)
-                    .background((prompt.kind == .unclassifiedActivity ? CalmPalette.persimmon : CalmPalette.cypress).opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .background(CalmPalette.categoryColor(viewModel.iconCategoryID).opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(prompt.title)
+                    Text(viewModel.title)
                         .font(.headline)
-                    Text(prompt.appName ?? prompt.urlHost ?? "Current activity")
+                    Text(viewModel.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
 
-            Text(prompt.message)
+            Text(viewModel.message)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if prompt.kind == .unclassifiedActivity {
+            if viewModel.isUnclassifiedActivity {
                 HStack {
                     Text("Put future time in")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Picker("Category", selection: $selectedCategoryID) {
-                        ForEach(model.categories.filter { $0.id != CategoryID.inactive.rawValue }) { category in
+                    Picker("Category", selection: $viewModel.selectedCategoryID) {
+                        ForEach(viewModel.assignableCategories) { category in
                             Text(category.name).tag(category.id)
                         }
                     }
@@ -50,22 +47,20 @@ struct SmartPromptView: View {
 
             HStack {
                 Button("Later") {
-                    model.dismissPrompt()
+                    viewModel.dismiss()
                 }
                 Spacer()
-                if prompt.kind == .unclassifiedActivity {
+                if viewModel.isUnclassifiedActivity {
                     Button("Remember this choice") {
-                        model.createRule(from: prompt, categoryID: selectedCategoryID)
+                        viewModel.rememberChoice()
                     }
                     .keyboardShortcut(.defaultAction)
                 } else {
                     Button("Review today") {
-                        model.dismissPrompt()
-                        NSApp.activate()
-                        openWindow(id: "today")
+                        viewModel.reviewToday()
                     }
                     Button("Keep context") {
-                        model.dismissPrompt()
+                        viewModel.keepContext()
                     }
                     .keyboardShortcut(.defaultAction)
                 }
@@ -73,8 +68,17 @@ struct SmartPromptView: View {
         }
         .padding(18)
         .background(CalmPalette.porcelain.opacity(0.65))
-        .onAppear {
-            selectedCategoryID = prompt.suggestedCategoryID ?? CategoryID.work.rawValue
-        }
     }
 }
+
+#if DEBUG
+#Preview("Smart Prompt") {
+    SmartPromptView(viewModel: PreviewFactory.smartPromptViewModel())
+        .frame(width: 380)
+}
+
+#Preview("Context Prompt") {
+    SmartPromptView(viewModel: PreviewFactory.smartPromptViewModel(kind: .categoryMismatch))
+        .frame(width: 380)
+}
+#endif

@@ -1,0 +1,696 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		010100000000000000000001 /* DailyReplicaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000001 /* DailyReplicaApp.swift */; };
+		010100000000000000000002 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000002 /* AppCoordinator.swift */; };
+		010100000000000000000003 /* AppProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000003 /* AppProtocols.swift */; };
+		010100000000000000000004 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000004 /* AppState.swift */; };
+		010100000000000000000005 /* CalmJournalDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000005 /* CalmJournalDesign.swift */; };
+		010100000000000000000006 /* LibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000006 /* LibraryService.swift */; };
+		010100000000000000000007 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000007 /* MenuBarView.swift */; };
+		010100000000000000000008 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000008 /* MenuBarViewModel.swift */; };
+		010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000009 /* PromptPanelCoordinator.swift */; };
+		01010000000000000000000A /* PromptService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000A /* PromptService.swift */; };
+		01010000000000000000000B /* SegmentEditingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000B /* SegmentEditingService.swift */; };
+		01010000000000000000000C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000C /* SettingsView.swift */; };
+		01010000000000000000000D /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000D /* SettingsViewModel.swift */; };
+		01010000000000000000000E /* SmartPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000E /* SmartPromptView.swift */; };
+		01010000000000000000000F /* SmartPromptViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000000F /* SmartPromptViewModel.swift */; };
+		010100000000000000000010 /* SystemActivitySampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000010 /* SystemActivitySampler.swift */; };
+		010100000000000000000015 /* WorkspaceActivityEventObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000016 /* WorkspaceActivityEventObserver.swift */; };
+		010100000000000000000011 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000011 /* TodayView.swift */; };
+		010100000000000000000012 /* TodayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000012 /* TodayViewModel.swift */; };
+		010100000000000000000013 /* TrackingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000013 /* TrackingService.swift */; };
+		010100000000000000000014 /* PreviewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000015 /* PreviewFactory.swift */; };
+		010200000000000000000001 /* ActivityClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000001 /* ActivityClassifier.swift */; };
+		010200000000000000000002 /* ActivityDayPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000002 /* ActivityDayPresentation.swift */; };
+		010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000003 /* ActivitySegmentReducer.swift */; };
+		010200000000000000000004 /* DateSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000004 /* DateSupport.swift */; };
+		010200000000000000000005 /* IdleClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000005 /* IdleClassifier.swift */; };
+		010200000000000000000006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000006 /* Models.swift */; };
+		010200000000000000000007 /* SQLiteActivityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000007 /* SQLiteActivityStore.swift */; };
+		010200000000000000000008 /* SmartPromptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000008 /* SmartPromptEngine.swift */; };
+		010300000000000000000001 /* DailyReplicaCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000001 /* DailyReplicaCore.framework */; };
+		010300000000000000000002 /* DailyReplicaCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000001 /* DailyReplicaCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		010300000000000000000003 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 020300000000000000000003 /* libsqlite3.tbd */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		030000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 050000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 060000000000000000000002;
+			remoteInfo = DailyReplicaCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		040000000000000000000001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				010300000000000000000002 /* DailyReplicaCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		020000000000000000000001 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		020000000000000000000002 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		020000000000000000000003 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
+		020000000000000000000004 /* SECURITY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SECURITY.md; sourceTree = "<group>"; };
+		020000000000000000000005 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		020000000000000000000006 /* Scripts/build-app.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "Scripts/build-app.sh"; sourceTree = "<group>"; };
+		020100000000000000000001 /* DailyReplicaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyReplicaApp.swift; sourceTree = "<group>"; };
+		020100000000000000000002 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		020100000000000000000003 /* AppProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppProtocols.swift; sourceTree = "<group>"; };
+		020100000000000000000004 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		020100000000000000000005 /* CalmJournalDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmJournalDesign.swift; sourceTree = "<group>"; };
+		020100000000000000000006 /* LibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryService.swift; sourceTree = "<group>"; };
+		020100000000000000000007 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		020100000000000000000008 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
+		020100000000000000000009 /* PromptPanelCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptPanelCoordinator.swift; sourceTree = "<group>"; };
+		02010000000000000000000A /* PromptService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptService.swift; sourceTree = "<group>"; };
+		02010000000000000000000B /* SegmentEditingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentEditingService.swift; sourceTree = "<group>"; };
+		02010000000000000000000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		02010000000000000000000D /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		02010000000000000000000E /* SmartPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptView.swift; sourceTree = "<group>"; };
+		02010000000000000000000F /* SmartPromptViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptViewModel.swift; sourceTree = "<group>"; };
+		020100000000000000000010 /* SystemActivitySampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActivitySampler.swift; sourceTree = "<group>"; };
+		020100000000000000000016 /* WorkspaceActivityEventObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceActivityEventObserver.swift; sourceTree = "<group>"; };
+		020100000000000000000011 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		020100000000000000000012 /* TodayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayViewModel.swift; sourceTree = "<group>"; };
+		020100000000000000000013 /* TrackingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingService.swift; sourceTree = "<group>"; };
+		020100000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		020100000000000000000015 /* PreviewFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewFactory.swift; sourceTree = "<group>"; };
+		020200000000000000000001 /* ActivityClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityClassifier.swift; sourceTree = "<group>"; };
+		020200000000000000000002 /* ActivityDayPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDayPresentation.swift; sourceTree = "<group>"; };
+		020200000000000000000003 /* ActivitySegmentReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentReducer.swift; sourceTree = "<group>"; };
+		020200000000000000000004 /* DateSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateSupport.swift; sourceTree = "<group>"; };
+		020200000000000000000005 /* IdleClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleClassifier.swift; sourceTree = "<group>"; };
+		020200000000000000000006 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		020200000000000000000007 /* SQLiteActivityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteActivityStore.swift; sourceTree = "<group>"; };
+		020200000000000000000008 /* SmartPromptEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPromptEngine.swift; sourceTree = "<group>"; };
+		020300000000000000000001 /* DailyReplicaCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DailyReplicaCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		020300000000000000000002 /* DailyReplica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DailyReplica.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		020300000000000000000003 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		070000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010300000000000000000001 /* DailyReplicaCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		070000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010300000000000000000003 /* libsqlite3.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				080000000000000000000002 /* Sources */,
+				080000000000000000000007 /* Scripts */,
+				020000000000000000000001 /* Package.swift */,
+				020000000000000000000002 /* README.md */,
+				020000000000000000000003 /* CONTRIBUTING.md */,
+				020000000000000000000004 /* SECURITY.md */,
+				020000000000000000000005 /* LICENSE */,
+				080000000000000000000005 /* Frameworks */,
+				080000000000000000000006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		080000000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				080000000000000000000003 /* DailyReplica */,
+				080000000000000000000004 /* DailyReplicaCore */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		080000000000000000000003 /* DailyReplica */ = {
+			isa = PBXGroup;
+			children = (
+				080000000000000000000008 /* Application */,
+				080000000000000000000009 /* Coordinators */,
+				08000000000000000000000A /* DesignSystem */,
+				08000000000000000000000B /* Infrastructure */,
+				08000000000000000000000C /* PreviewSupport */,
+				08000000000000000000000D /* Resources */,
+				08000000000000000000000E /* Services */,
+				08000000000000000000000F /* ViewModels */,
+				080000000000000000000010 /* Views */,
+			);
+			path = DailyReplica;
+			sourceTree = "<group>";
+		};
+		080000000000000000000008 /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000001 /* DailyReplicaApp.swift */,
+				020100000000000000000004 /* AppState.swift */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		080000000000000000000009 /* Coordinators */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000002 /* AppCoordinator.swift */,
+				020100000000000000000009 /* PromptPanelCoordinator.swift */,
+			);
+			path = Coordinators;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000A /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000005 /* CalmJournalDesign.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000B /* Infrastructure */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000003 /* AppProtocols.swift */,
+				020100000000000000000010 /* SystemActivitySampler.swift */,
+				020100000000000000000016 /* WorkspaceActivityEventObserver.swift */,
+			);
+			path = Infrastructure;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000C /* PreviewSupport */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000015 /* PreviewFactory.swift */,
+			);
+			path = PreviewSupport;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000014 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000E /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000006 /* LibraryService.swift */,
+				02010000000000000000000A /* PromptService.swift */,
+				02010000000000000000000B /* SegmentEditingService.swift */,
+				020100000000000000000013 /* TrackingService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		08000000000000000000000F /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000008 /* MenuBarViewModel.swift */,
+				02010000000000000000000D /* SettingsViewModel.swift */,
+				02010000000000000000000F /* SmartPromptViewModel.swift */,
+				020100000000000000000012 /* TodayViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		080000000000000000000010 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				080000000000000000000011 /* MenuBar */,
+				080000000000000000000012 /* Prompt */,
+				080000000000000000000013 /* Settings */,
+				080000000000000000000014 /* Today */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		080000000000000000000011 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000007 /* MenuBarView.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		080000000000000000000012 /* Prompt */ = {
+			isa = PBXGroup;
+			children = (
+				02010000000000000000000E /* SmartPromptView.swift */,
+			);
+			path = Prompt;
+			sourceTree = "<group>";
+		};
+		080000000000000000000013 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				02010000000000000000000C /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		080000000000000000000014 /* Today */ = {
+			isa = PBXGroup;
+			children = (
+				020100000000000000000011 /* TodayView.swift */,
+			);
+			path = Today;
+			sourceTree = "<group>";
+		};
+		080000000000000000000004 /* DailyReplicaCore */ = {
+			isa = PBXGroup;
+			children = (
+				020200000000000000000001 /* ActivityClassifier.swift */,
+				020200000000000000000002 /* ActivityDayPresentation.swift */,
+				020200000000000000000003 /* ActivitySegmentReducer.swift */,
+				020200000000000000000004 /* DateSupport.swift */,
+				020200000000000000000005 /* IdleClassifier.swift */,
+				020200000000000000000006 /* Models.swift */,
+				020200000000000000000007 /* SQLiteActivityStore.swift */,
+				020200000000000000000008 /* SmartPromptEngine.swift */,
+			);
+			path = DailyReplicaCore;
+			sourceTree = "<group>";
+		};
+		080000000000000000000005 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				020300000000000000000003 /* libsqlite3.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		080000000000000000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				020300000000000000000002 /* DailyReplica.app */,
+				020300000000000000000001 /* DailyReplicaCore.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		080000000000000000000007 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000006 /* Scripts/build-app.sh */,
+			);
+			name = Scripts;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		060000000000000000000001 /* DailyReplica */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0000000000000000000001 /* Build configuration list for PBXNativeTarget "DailyReplica" */;
+			buildPhases = (
+				090000000000000000000001 /* Sources */,
+				070000000000000000000001 /* Frameworks */,
+				040000000000000000000001 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B0000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = DailyReplica;
+			productName = DailyReplica;
+			productReference = 020300000000000000000002 /* DailyReplica.app */;
+			productType = "com.apple.product-type.application";
+		};
+		060000000000000000000002 /* DailyReplicaCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A0000000000000000000002 /* Build configuration list for PBXNativeTarget "DailyReplicaCore" */;
+			buildPhases = (
+				090000000000000000000002 /* Sources */,
+				070000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DailyReplicaCore;
+			productName = DailyReplicaCore;
+			productReference = 020300000000000000000001 /* DailyReplicaCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		050000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					060000000000000000000001 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					060000000000000000000002 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+				};
+			};
+			buildConfigurationList = 0A0000000000000000000003 /* Build configuration list for PBXProject "DailyReplica" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 080000000000000000000001;
+			productRefGroup = 080000000000000000000006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				060000000000000000000001 /* DailyReplica */,
+				060000000000000000000002 /* DailyReplicaCore */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		090000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010100000000000000000001 /* DailyReplicaApp.swift in Sources */,
+				010100000000000000000002 /* AppCoordinator.swift in Sources */,
+				010100000000000000000003 /* AppProtocols.swift in Sources */,
+				010100000000000000000004 /* AppState.swift in Sources */,
+				010100000000000000000005 /* CalmJournalDesign.swift in Sources */,
+				010100000000000000000006 /* LibraryService.swift in Sources */,
+				010100000000000000000007 /* MenuBarView.swift in Sources */,
+				010100000000000000000008 /* MenuBarViewModel.swift in Sources */,
+				010100000000000000000009 /* PromptPanelCoordinator.swift in Sources */,
+				01010000000000000000000A /* PromptService.swift in Sources */,
+				01010000000000000000000B /* SegmentEditingService.swift in Sources */,
+				01010000000000000000000C /* SettingsView.swift in Sources */,
+				01010000000000000000000D /* SettingsViewModel.swift in Sources */,
+				01010000000000000000000E /* SmartPromptView.swift in Sources */,
+				01010000000000000000000F /* SmartPromptViewModel.swift in Sources */,
+				010100000000000000000010 /* SystemActivitySampler.swift in Sources */,
+				010100000000000000000015 /* WorkspaceActivityEventObserver.swift in Sources */,
+				010100000000000000000011 /* TodayView.swift in Sources */,
+				010100000000000000000012 /* TodayViewModel.swift in Sources */,
+				010100000000000000000013 /* TrackingService.swift in Sources */,
+				010100000000000000000014 /* PreviewFactory.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		090000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010200000000000000000001 /* ActivityClassifier.swift in Sources */,
+				010200000000000000000002 /* ActivityDayPresentation.swift in Sources */,
+				010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */,
+				010200000000000000000004 /* DateSupport.swift in Sources */,
+				010200000000000000000005 /* IdleClassifier.swift in Sources */,
+				010200000000000000000006 /* Models.swift in Sources */,
+				010200000000000000000007 /* SQLiteActivityStore.swift in Sources */,
+				010200000000000000000008 /* SmartPromptEngine.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0B0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 060000000000000000000002 /* DailyReplicaCore */;
+			targetProxy = 030000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0C0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 532NRWLQ2D;
+				INFOPLIST_FILE = Sources/DailyReplica/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
+				PRODUCT_NAME = DailyReplica;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0C0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 532NRWLQ2D;
+				INFOPLIST_FILE = Sources/DailyReplica/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.app";
+				PRODUCT_NAME = DailyReplica;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		0C0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.core";
+				PRODUCT_NAME = DailyReplicaCore;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0C0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "local.daily-replica.core";
+				PRODUCT_NAME = DailyReplicaCore;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		0C0000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0C0000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A0000000000000000000001 /* Build configuration list for PBXNativeTarget "DailyReplica" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000001 /* Debug */,
+				0C0000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000000000000000000002 /* Build configuration list for PBXNativeTarget "DailyReplicaCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000003 /* Debug */,
+				0C0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A0000000000000000000003 /* Build configuration list for PBXProject "DailyReplica" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000005 /* Debug */,
+				0C0000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 050000000000000000000001 /* Project object */;
+}

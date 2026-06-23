@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+    cat <<'USAGE'
+Usage: bash Scripts/build-app.sh [debug|release]
+
+Builds DailyReplica.app at .build/DailyReplica.app.
+
+Environment variables:
+  DAILY_REPLICA_VERSION             CFBundleShortVersionString (default: 0.1.1)
+  DAILY_REPLICA_BUILD_NUMBER        CFBundleVersion integer (default: 2)
+  DAILY_REPLICA_CODE_SIGN_IDENTITY  Optional codesign identity
+  DAILY_REPLICA_CODE_SIGN_TEAM_ID   Optional expected Apple team identifier
+USAGE
+}
+
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIGURATION="${1:-release}"
 PRODUCT_NAME="DailyReplica"
@@ -10,6 +24,31 @@ CODE_SIGN_IDENTITY="${DAILY_REPLICA_CODE_SIGN_IDENTITY:-}"
 CODE_SIGN_TEAM_ID="${DAILY_REPLICA_CODE_SIGN_TEAM_ID:-}"
 APP_DIR="$ROOT_DIR/.build/$PRODUCT_NAME.app"
 EXECUTABLE_PATH="$ROOT_DIR/.build/$CONFIGURATION/$PRODUCT_NAME"
+INFO_PLIST_TEMPLATE="$ROOT_DIR/Sources/DailyReplica/Resources/Info.plist"
+
+case "$CONFIGURATION" in
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    debug|release)
+        ;;
+    *)
+        echo "Unsupported configuration: $CONFIGURATION" >&2
+        usage >&2
+        exit 64
+        ;;
+esac
+
+if [[ -z "$VERSION" ]]; then
+    echo "DAILY_REPLICA_VERSION must not be empty" >&2
+    exit 64
+fi
+
+if [[ ! "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+    echo "DAILY_REPLICA_BUILD_NUMBER must be an integer" >&2
+    exit 64
+fi
 
 cd "$ROOT_DIR"
 mkdir -p "$ROOT_DIR/.build/clang-module-cache"
@@ -22,42 +61,15 @@ mkdir -p "$APP_DIR/Contents/Resources"
 cp "$EXECUTABLE_PATH" "$APP_DIR/Contents/MacOS/$PRODUCT_NAME"
 chmod +x "$APP_DIR/Contents/MacOS/$PRODUCT_NAME"
 
-cat > "$APP_DIR/Contents/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleDisplayName</key>
-    <string>Daily Replica</string>
-    <key>CFBundleExecutable</key>
-    <string>DailyReplica</string>
-    <key>CFBundleIdentifier</key>
-    <string>local.daily-replica.app</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Daily Replica</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$VERSION</string>
-    <key>CFBundleVersion</key>
-    <string>$BUILD_NUMBER</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSAccessibilityUsageDescription</key>
-    <string>Daily Replica reads the focused window title to make your local activity timeline more useful.</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Daily Replica reads the active Chrome tab URL locally so Chrome activity can be categorized by host.</string>
-    <key>NSSupportsAutomaticGraphicsSwitching</key>
-    <true/>
-</dict>
-</plist>
-PLIST
+sed \
+    -e "s|\$(DEVELOPMENT_LANGUAGE)|en|g" \
+    -e "s|\$(EXECUTABLE_NAME)|$PRODUCT_NAME|g" \
+    -e "s|\$(PRODUCT_BUNDLE_IDENTIFIER)|local.daily-replica.app|g" \
+    -e "s|\$(PRODUCT_BUNDLE_PACKAGE_TYPE)|APPL|g" \
+    -e "s|\$(MARKETING_VERSION)|$VERSION|g" \
+    -e "s|\$(CURRENT_PROJECT_VERSION)|$BUILD_NUMBER|g" \
+    -e "s|\$(MACOSX_DEPLOYMENT_TARGET)|14.0|g" \
+    "$INFO_PLIST_TEMPLATE" > "$APP_DIR/Contents/Info.plist"
 
 if [[ -n "$CODE_SIGN_IDENTITY" ]]; then
     if [[ -n "$CODE_SIGN_TEAM_ID" && "$CODE_SIGN_IDENTITY" != *"($CODE_SIGN_TEAM_ID)"* ]]; then

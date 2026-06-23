@@ -256,3 +256,55 @@ struct EmptyJournalState: View {
         .journalSurface(padding: 24)
     }
 }
+
+#if DEBUG
+#Preview("Journal Section Header") {
+    JournalSectionHeader(title: "Today", detail: "2h 10m")
+        .padding()
+        .frame(width: 360)
+}
+
+#Preview("Metric Tile") {
+    MetricTile(title: "Tracked", value: "3h 12m", tint: CalmPalette.cypress, symbol: "clock")
+        .padding()
+        .frame(width: 280)
+}
+
+#Preview("Category Pill") {
+    HStack {
+        CategoryPill(title: "Work", categoryID: CategoryID.work.rawValue)
+        CategoryPill(title: "Edited", categoryID: CategoryID.personal.rawValue, systemImage: "pencil")
+    }
+    .padding()
+}
+
+#Preview("Category Dot") {
+    CategoryDot(categoryID: CategoryID.media.rawValue)
+        .padding()
+}
+
+#Preview("App Icon Badge") {
+    AppIconBadge(bundleID: "com.apple.dt.Xcode", appName: "Xcode", size: 52)
+        .padding()
+}
+
+#Preview("Day Ribbon") {
+    DayRibbonView(
+        entries: PreviewFactory.ribbonEntries(),
+        selectedSegmentID: PreviewFactory.segment().id,
+        height: 18
+    )
+    .padding()
+    .frame(width: 420)
+}
+
+#Preview("Empty Journal State") {
+    EmptyJournalState(
+        title: "No activity yet",
+        message: "Start tracking from the menu bar and your day will appear here.",
+        systemImage: "clock.badge"
+    )
+    .padding()
+    .frame(width: 460)
+}
+#endif
