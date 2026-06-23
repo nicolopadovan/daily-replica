@@ -48,10 +48,13 @@ struct SettingsView: View {
         .sheet(item: $viewModel.pendingAutoSortBatch) { batch in
             AutoSortRuleConfirmationSheet(
                 batch: batch,
+                categories: viewModel.assignableCategories,
                 categoryName: { viewModel.displayName(for: $0) },
                 isRetroactive: $viewModel.pendingAutoSortIsRetroactive,
                 onCancel: { viewModel.cancelPendingAutoSortRule() },
-                onConfirm: { viewModel.confirmPendingAutoSortRule() }
+                onConfirm: { requests, retroactive in
+                    viewModel.confirmPendingAutoSortRule(requests: requests, retroactive: retroactive)
+                }
             )
         }
     }
@@ -225,7 +228,7 @@ struct SettingsView: View {
                         Picker("Sort by", selection: $viewModel.ruleKind) {
                             Text("App").tag(ClassificationRuleKind.appBundleID)
                             Text("App name").tag(ClassificationRuleKind.appName)
-                            Text("Chrome website").tag(ClassificationRuleKind.chromeHost)
+                            Text("Website").tag(ClassificationRuleKind.chromeHost)
                         }
                         .frame(width: 170)
 
@@ -376,10 +379,10 @@ struct SettingsView: View {
 
     private func ruleKindTitle(_ kind: ClassificationRuleKind) -> String {
         switch kind {
-        case .appBundleID: "App"
-        case .appName: "App name"
-        case .chromeHost: "Chrome website"
-        }
+            case .appBundleID: "App"
+            case .appName: "App name"
+            case .chromeHost: "Website"
+            }
     }
 
     private var permissionsPane: some View {
@@ -392,16 +395,41 @@ struct SettingsView: View {
                     subtitle: "Accessibility lets Daily Replica read focused window titles. Without it, app-level tracking still works."
                 )
 
-                HStack {
-                    PreferenceRow(
-                        icon: "globe",
-                        tint: CalmPalette.signalBlue,
-                        title: "Chrome URLs",
-                        subtitle: "Automation is requested only when Chrome tab URLs are queried. If denied, website detail stays blank."
-                    )
-                    Spacer()
+                VStack(spacing: 10) {
+                    ForEach(viewModel.browserDefinitions) { browser in
+                        let status = viewModel.browserURLPermission(for: browser.bundleID)
+                        HStack {
+                            PreferenceRow(
+                                icon: browserPermissionIcon(isAuthorized: status),
+                                tint: browserPermissionTint(isAuthorized: status),
+                                title: "\(browser.applicationName) website URLs",
+                                subtitle: browserPermissionSubtitle(
+                                    isAuthorized: status,
+                                    browserName: browser.applicationName,
+                                    isInstalled: browser.isInstalled
+                                )
+                            )
+                            Spacer()
+
+                            if browser.isInstalled {
+                                Button("Set up \(browser.applicationName)") {
+                                    _ = viewModel.refreshBrowserURLPermission(for: browser.bundleID)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(status == true ? CalmPalette.cypress : CalmPalette.signalBlue)
+                            } else {
+                                Text("Not installed")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.trailing, 10)
+                        .background(
+                            Color(nsColor: .controlBackgroundColor).opacity(0.6),
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                    }
                 }
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
             }
 
             HStack {
@@ -451,6 +479,42 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            viewModel.refreshAccessibilityPermission(prompt: false)
+        }
+    }
+
+    private func browserPermissionIcon(isAuthorized: Bool?) -> String {
+        switch isAuthorized {
+        case true: "checkmark.circle.fill"
+        case false: "exclamationmark.triangle.fill"
+        case nil: "questionmark.circle.fill"
+        }
+    }
+
+    private func browserPermissionTint(isAuthorized: Bool?) -> Color {
+        switch isAuthorized {
+        case true:
+            return CalmPalette.cypress
+        case false:
+            return CalmPalette.persimmon
+        case nil:
+            return .secondary
+        }
+    }
+
+    private func browserPermissionSubtitle(isAuthorized: Bool?, browserName: String, isInstalled: Bool) -> String {
+        if !isInstalled {
+            return "\(browserName) is not installed on this Mac."
+        }
+        switch isAuthorized {
+        case true:
+            return "Browser tab URLs are captured and used for website classification."
+        case false:
+            return "Enable browser automation to capture active tab URLs."
+        case nil:
+            return "Check permission status for this browser."
         }
     }
 

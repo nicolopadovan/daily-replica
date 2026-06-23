@@ -44,6 +44,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var bulkRuleCategoryID = CategoryID.work.rawValue
     @Published var pendingAutoSortBatch: AutoSortRuleBatch?
     @Published var pendingAutoSortIsRetroactive = true
+    @Published private(set) var browserURLPermissions: [String: Bool?] = [:]
 
     private let state: AppState
     private let libraryService: LibraryService
@@ -74,6 +75,8 @@ final class SettingsViewModel: ObservableObject {
     var contexts: [ProjectContext] { state.contexts }
     var rules: [ClassificationRule] { state.rules }
     var accessibilityTrusted: Bool { state.accessibilityTrusted }
+    var chromeURLsAuthorized: Bool? { state.chromeURLsAuthorized }
+    var browserDefinitions: [BrowserURLReader.BrowserDefinition] { BrowserURLReader.supportedBrowsers }
     var updatesConfigured: Bool { updateService?.isConfigured ?? false }
     var canCheckForUpdates: Bool { updateService?.canCheckForUpdates ?? false }
     var automaticallyChecksForUpdates: Bool { updateService?.automaticallyChecksForUpdates ?? false }
@@ -155,20 +158,26 @@ final class SettingsViewModel: ObservableObject {
         return 0
     }
 
-    func confirmPendingAutoSortRule() {
+    func confirmPendingAutoSortRule(
+        requests: [AutoSortRuleRequest]? = nil,
+        retroactive: Bool? = nil
+    ) {
         guard let pendingAutoSortBatch else {
             return
         }
-        for request in pendingAutoSortBatch.requests {
+        let selectedRequests = requests ?? pendingAutoSortBatch.requests
+        let shouldApplyRetroactively = retroactive ?? pendingAutoSortIsRetroactive
+        for request in selectedRequests where request.isEnabled {
             libraryService.addRule(
                 kind: request.kind,
                 pattern: request.pattern,
                 categoryID: request.categoryID,
-                retroactive: pendingAutoSortIsRetroactive
+                retroactive: shouldApplyRetroactively
             )
         }
         if let request = pendingAutoSortBatch.requests.first,
            pendingAutoSortBatch.requests.count == 1,
+           request.isEnabled,
            ClassificationRule.normalizedPattern(rulePattern, kind: ruleKind) == request.pattern {
             rulePattern = ""
         }
@@ -223,8 +232,44 @@ final class SettingsViewModel: ObservableObject {
         libraryService.deleteRule(id: id)
     }
 
+    func refreshAccessibilityPermission(prompt: Bool = false) {
+        libraryService.refreshAccessibilityTrust(prompt: prompt)
+    }
+
     func requestAccessibilityPermission() {
-        libraryService.refreshAccessibilityTrust(prompt: true)
+        refreshAccessibilityPermission(prompt: true)
+    }
+
+    func refreshChromeURLPermission() {
+        let hasPermission = BrowserURLReader().hasAnyAutomationPermission()
+        state.chromeURLsAuthorized = hasPermission
+    }
+
+    func refreshBrowserURLPermission(for bundleID: String) -> Bool? {
+        guard BrowserURLReader.supports(bundleID: bundleID) else {
+            browserURLPermissions[bundleID] = nil
+            refreshOverallBrowserPermissionState()
+            return nil
+        }
+        let isAuthorized = BrowserURLReader().hasAutomationPermission(for: bundleID)
+        browserURLPermissions[bundleID] = isAuthorized
+        refreshOverallBrowserPermissionState()
+        return isAuthorized
+    }
+
+    func browserURLPermission(for bundleID: String) -> Bool? {
+        browserURLPermissions[bundleID] ?? nil
+    }
+
+    private func refreshOverallBrowserPermissionState() {
+        let knownStatuses = browserURLPermissions.values.compactMap { $0 }
+        if knownStatuses.contains(true) {
+            state.chromeURLsAuthorized = true
+        } else if knownStatuses.contains(false) {
+            state.chromeURLsAuthorized = false
+        } else {
+            state.chromeURLsAuthorized = nil
+        }
     }
 
     func checkForUpdates() {

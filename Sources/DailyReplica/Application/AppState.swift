@@ -24,6 +24,7 @@ final class AppState: ObservableObject {
     @Published var lastError: String?
     @Published var lastSampleDescription = "Not tracking"
     @Published var accessibilityTrusted = false
+    @Published var chromeURLsAuthorized: Bool? = nil
 
     var currentContext: ProjectContext? {
         guard let currentContextID else {
@@ -58,6 +59,10 @@ final class AppState: ObservableObject {
 
     var latestSegment: ActivitySegment? {
         todaySegments.last
+    }
+
+    var hasObservedWindowTitles: Bool {
+        todaySegments.contains { $0.windowTitle?.isEmpty == false }
     }
 
     func displayName(for categoryID: String) -> String {

@@ -1,5 +1,6 @@
 import DailyReplicaCore
 import Foundation
+import AppKit
 
 @MainActor
 final class TrackingService {
@@ -11,6 +12,7 @@ final class TrackingService {
     private let permissionChecker: PermissionChecking
     private let promptService: PromptService
     private let eventObserver: ActivityEventObserving?
+    private let browserURLReader = BrowserURLReader()
     private let heartbeatInterval: TimeInterval
     private let classifier: ActivityClassifier
     private let reducer: ActivitySegmentReducer
@@ -47,6 +49,7 @@ final class TrackingService {
             self?.handleEvent(event)
         }
         eventObserver?.start()
+        appendInactiveGapIfNeeded(at: Date())
         handleEvent(.heartbeat)
 
         let timer = Timer(timeInterval: heartbeatInterval, repeats: true) { [weak self] _ in
@@ -87,8 +90,15 @@ final class TrackingService {
     }
 
     private func captureFocusedActivity(now: Date) {
-        state.accessibilityTrusted = permissionChecker.isAccessibilityTrusted(prompt: false)
-        let focus = sampler.sample(now: now, accessibilityTrusted: state.accessibilityTrusted)
+        let accessibilityTrusted = permissionChecker.isAccessibilityTrusted(prompt: false)
+        if let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+           BrowserURLReader.supports(bundleID: frontmostBundleID) {
+            state.chromeURLsAuthorized = browserURLReader.hasAutomationPermission(for: frontmostBundleID)
+        }
+        let focus = sampler.sample(now: now, accessibilityTrusted: accessibilityTrusted)
+        let capturedExternalWindowTitle = focus.appBundleID.map(Self.ownBundleIDs.contains) != true
+            && focus.windowTitle?.isEmpty == false
+        state.accessibilityTrusted = accessibilityTrusted || capturedExternalWindowTitle || state.hasObservedWindowTitles
         if focus.appBundleID.map(Self.ownBundleIDs.contains) == true {
             captureInactiveBoundary(now: now)
             return
@@ -117,6 +127,24 @@ final class TrackingService {
         )
         persistRecentSegments()
         state.lastSampleDescription = "Inactive"
+    }
+
+    private func appendInactiveGapIfNeeded(at now: Date) {
+        guard let lastSegment = state.todaySegments.last, lastSegment.state == .active else {
+            return
+        }
+        guard now > lastSegment.end else {
+            return
+        }
+
+        reducer.ingest(
+            ClassifiedSample(
+                focus: FocusSample(timestamp: now, state: .inactive),
+                categoryID: CategoryID.inactive.rawValue
+            ),
+            into: &state.todaySegments
+        )
+        persistRecentSegments()
     }
 
     private func persistRecentSegments() {

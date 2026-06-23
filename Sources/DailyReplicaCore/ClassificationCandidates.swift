@@ -106,7 +106,7 @@ public enum ClassificationCandidatePresenter {
 
     private static func target(for segment: ActivitySegment) -> Target? {
         if let host = segment.urlHost ?? segment.urlString.flatMap({ URL(string: $0)?.host?.lowercased() }) {
-            return Target(kind: .chromeHost, pattern: host, title: host, subtitle: "Chrome website")
+            return Target(kind: .chromeHost, pattern: host, title: host, subtitle: "Website")
         }
         if let bundleID = segment.appBundleID {
             return Target(

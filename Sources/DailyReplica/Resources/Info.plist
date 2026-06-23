@@ -27,7 +27,7 @@
     <key>NSAccessibilityUsageDescription</key>
     <string>Daily Replica reads the focused window title to make your local activity timeline more useful.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Daily Replica reads the active Chrome tab URL locally so Chrome activity can be categorized by host.</string>
+    <string>Daily Replica reads active browser tab URLs locally so website activity can be categorized by host.</string>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>SUFeedURL</key>
