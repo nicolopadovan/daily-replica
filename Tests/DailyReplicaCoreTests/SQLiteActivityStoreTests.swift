@@ -36,6 +36,33 @@ final class SQLiteActivityStoreTests: XCTestCase {
         XCTAssertEqual(try store.fetchCategories().count, CategoryID.allCases.count)
     }
 
+    func testFetchSegmentDateBoundsReturnsSpanAcrossSegments() throws {
+        let store = try SQLiteActivityStore(path: ":memory:")
+        try store.upsertSegment(
+            ActivitySegment(
+                start: Date(timeIntervalSince1970: 200),
+                end: Date(timeIntervalSince1970: 320),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            )
+        )
+        try store.upsertSegment(
+            ActivitySegment(
+                start: Date(timeIntervalSince1970: 100),
+                end: Date(timeIntervalSince1970: 120),
+                state: .active,
+                appName: "Safari",
+                categoryID: CategoryID.browsing.rawValue
+            )
+        )
+
+        let bounds = try store.fetchSegmentDateBounds()
+
+        XCTAssertEqual(bounds?.start, Date(timeIntervalSince1970: 100))
+        XCTAssertEqual(bounds?.end, Date(timeIntervalSince1970: 320))
+    }
+
     func testUpsertSegmentStoresManualOverrideFields() throws {
         let store = try SQLiteActivityStore(path: ":memory:")
         let context = ProjectContext(name: "Break", defaultCategoryID: CategoryID.videogames.rawValue)

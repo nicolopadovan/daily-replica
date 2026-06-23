@@ -42,6 +42,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var rulePattern = ""
     @Published var ruleCategoryID = CategoryID.work.rawValue
     @Published var bulkRuleCategoryID = CategoryID.work.rawValue
+    @Published var pendingAutoSortBatch: AutoSortRuleBatch?
+    @Published var pendingAutoSortIsRetroactive = true
 
     private let state: AppState
     private let libraryService: LibraryService
@@ -109,26 +111,74 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func createRule() {
-        guard libraryService.addRule(kind: ruleKind, pattern: rulePattern, categoryID: ruleCategoryID) != nil else {
+        let normalized = ClassificationRule.normalizedPattern(rulePattern, kind: ruleKind)
+        guard !normalized.isEmpty else {
             return
         }
-        rulePattern = ""
+        pendingAutoSortBatch = AutoSortRuleBatch(requests: [
+            AutoSortRuleRequest(
+                kind: ruleKind,
+                pattern: normalized,
+                categoryID: ruleCategoryID,
+                title: normalized
+            )
+        ])
+        pendingAutoSortIsRetroactive = true
     }
 
     func acceptRuleSuggestion(_ suggestion: ClassificationCandidate) {
         guard let categoryID = suggestion.suggestedCategoryID else {
             return
         }
-        libraryService.addRule(kind: suggestion.kind, pattern: suggestion.pattern, categoryID: categoryID)
+        pendingAutoSortBatch = AutoSortRuleBatch(requests: [
+            AutoSortRuleRequest(
+                kind: suggestion.kind,
+                pattern: suggestion.pattern,
+                categoryID: categoryID,
+                title: suggestion.title
+            )
+        ])
+        pendingAutoSortIsRetroactive = true
     }
 
     @discardableResult
     func classifyUncategorized(_ candidate: ClassificationCandidate) -> Int {
-        libraryService.classifyUncategorized(
-            kind: candidate.kind,
-            pattern: candidate.pattern,
-            categoryID: bulkRuleCategoryID
-        )
+        pendingAutoSortBatch = AutoSortRuleBatch(requests: [
+            AutoSortRuleRequest(
+                kind: candidate.kind,
+                pattern: candidate.pattern,
+                categoryID: bulkRuleCategoryID,
+                title: candidate.title
+            )
+        ])
+        pendingAutoSortIsRetroactive = true
+        return 0
+    }
+
+    func confirmPendingAutoSortRule() {
+        guard let pendingAutoSortBatch else {
+            return
+        }
+        for request in pendingAutoSortBatch.requests {
+            libraryService.addRule(
+                kind: request.kind,
+                pattern: request.pattern,
+                categoryID: request.categoryID,
+                retroactive: pendingAutoSortIsRetroactive
+            )
+        }
+        if let request = pendingAutoSortBatch.requests.first,
+           pendingAutoSortBatch.requests.count == 1,
+           ClassificationRule.normalizedPattern(rulePattern, kind: ruleKind) == request.pattern {
+            rulePattern = ""
+        }
+        self.pendingAutoSortBatch = nil
+        pendingAutoSortIsRetroactive = true
+    }
+
+    func cancelPendingAutoSortRule() {
+        pendingAutoSortBatch = nil
+        pendingAutoSortIsRetroactive = true
     }
 
     func updateRuleCategory(id: UUID, categoryID: String) {

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    private let showsSidebar: Bool
     @State private var jsonExportDocument = TextExportDocument()
     @State private var csvExportDocument = TextExportDocument()
     @State private var isExportingJSON = false
@@ -11,16 +12,13 @@ struct SettingsView: View {
     @State private var isConfirmingActivityClear = false
     @State private var isConfirmingFullReset = false
 
+    init(viewModel: SettingsViewModel, showsSidebar: Bool = true) {
+        self.viewModel = viewModel
+        self.showsSidebar = showsSidebar
+    }
+
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Divider()
-            ScrollView {
-                selectedPane
-                    .padding(24)
-            }
-            .background(CalmPalette.porcelain.opacity(0.42))
-        }
+        settingsContent
         .fileExporter(
             isPresented: $isExportingJSON,
             document: jsonExportDocument,
@@ -47,6 +45,36 @@ struct SettingsView: View {
         } message: {
             Text("This removes tracked activity, project sessions, custom projects, and rules stored on this Mac.")
         }
+        .sheet(item: $viewModel.pendingAutoSortBatch) { batch in
+            AutoSortRuleConfirmationSheet(
+                batch: batch,
+                categoryName: { viewModel.displayName(for: $0) },
+                isRetroactive: $viewModel.pendingAutoSortIsRetroactive,
+                onCancel: { viewModel.cancelPendingAutoSortRule() },
+                onConfirm: { viewModel.confirmPendingAutoSortRule() }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var settingsContent: some View {
+        if showsSidebar {
+            HStack(spacing: 0) {
+                sidebar
+                Divider()
+                paneScrollView
+            }
+        } else {
+            paneScrollView
+        }
+    }
+
+    private var paneScrollView: some View {
+        ScrollView {
+            selectedPane
+                .padding(24)
+        }
+        .background(CalmPalette.porcelain.opacity(0.42))
     }
 
     private var sidebar: some View {
@@ -196,11 +224,12 @@ struct SettingsView: View {
                     HStack(spacing: 10) {
                         Picker("Sort by", selection: $viewModel.ruleKind) {
                             Text("App").tag(ClassificationRuleKind.appBundleID)
+                            Text("App name").tag(ClassificationRuleKind.appName)
                             Text("Chrome website").tag(ClassificationRuleKind.chromeHost)
                         }
                         .frame(width: 170)
 
-                        TextField(viewModel.ruleKind == .appBundleID ? "Example: com.apple.dt.Xcode" : "Example: github.com", text: $viewModel.rulePattern)
+                        TextField(rulePatternPlaceholder, text: $viewModel.rulePattern)
                             .textFieldStyle(.roundedBorder)
                     }
 
@@ -221,7 +250,7 @@ struct SettingsView: View {
                         .tint(CalmPalette.cypress)
                     }
 
-                    Text(viewModel.ruleKind == .appBundleID ? "Tip: app rules use bundle IDs, such as com.google.Chrome." : "Tip: website rules use the domain, such as github.com.")
+                    Text(ruleKindTip)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -233,7 +262,7 @@ struct SettingsView: View {
                     ForEach(viewModel.ruleSuggestions) { suggestion in
                         HStack {
                             PreferenceRow(
-                                icon: suggestion.kind == .appBundleID ? "app.fill" : "globe",
+                                icon: ruleKindIcon(suggestion.kind),
                                 tint: CalmPalette.categoryColor(suggestion.suggestedCategoryID ?? CategoryID.unclassified.rawValue),
                                 title: suggestion.title,
                                 subtitle: "\(suggestion.subtitle) · \(suggestion.segmentCount) corrections · \(DurationFormatter.format(suggestion.duration))"
@@ -268,7 +297,7 @@ struct SettingsView: View {
                     ForEach(viewModel.unclassifiedCandidates) { candidate in
                         HStack {
                             PreferenceRow(
-                                icon: candidate.kind == .appBundleID ? "app.fill" : "globe",
+                                icon: ruleKindIcon(candidate.kind),
                                 tint: CalmPalette.categoryColor(viewModel.bulkRuleCategoryID),
                                 title: candidate.title,
                                 subtitle: "\(candidate.subtitle) · \(candidate.segmentCount) entries · \(DurationFormatter.format(candidate.duration))"
@@ -291,10 +320,10 @@ struct SettingsView: View {
                 ForEach(viewModel.rules) { rule in
                     HStack {
                         PreferenceRow(
-                            icon: rule.kind == .appBundleID ? "app.fill" : "globe",
+                            icon: ruleKindIcon(rule.kind),
                             tint: CalmPalette.categoryColor(rule.categoryID),
                             title: rule.pattern,
-                            subtitle: "\(rule.kind == .appBundleID ? "App" : "Chrome website") goes to \(viewModel.displayName(for: rule.categoryID))"
+                            subtitle: "\(ruleKindTitle(rule.kind)) goes to \(viewModel.displayName(for: rule.categoryID))"
                         )
                         Spacer()
                         Picker("Category", selection: ruleCategoryBinding(for: rule)) {
@@ -320,6 +349,37 @@ struct SettingsView: View {
             get: { rule.categoryID },
             set: { viewModel.updateRuleCategory(id: rule.id, categoryID: $0) }
         )
+    }
+
+    private var rulePatternPlaceholder: String {
+        switch viewModel.ruleKind {
+        case .appBundleID: "Example: com.apple.dt.Xcode"
+        case .appName: "Example: java"
+        case .chromeHost: "Example: github.com"
+        }
+    }
+
+    private var ruleKindTip: String {
+        switch viewModel.ruleKind {
+        case .appBundleID: "Tip: app rules use bundle IDs, such as com.google.Chrome."
+        case .appName: "Tip: app name rules cover processes without bundle IDs, such as java."
+        case .chromeHost: "Tip: website rules use the domain, such as github.com."
+        }
+    }
+
+    private func ruleKindIcon(_ kind: ClassificationRuleKind) -> String {
+        switch kind {
+        case .appBundleID, .appName: "app.fill"
+        case .chromeHost: "globe"
+        }
+    }
+
+    private func ruleKindTitle(_ kind: ClassificationRuleKind) -> String {
+        switch kind {
+        case .appBundleID: "App"
+        case .appName: "App name"
+        case .chromeHost: "Chrome website"
+        }
     }
 
     private var permissionsPane: some View {

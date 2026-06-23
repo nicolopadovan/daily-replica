@@ -246,6 +246,27 @@ public final class SQLiteActivityStore {
         return segments
     }
 
+    public func fetchAllSegments() throws -> [ActivitySegment] {
+        let statement = try prepare(
+            """
+            SELECT id, start_at, end_at, state, app_bundle_id, app_name, window_title,
+                   url_string, url_host, category_id, context_id, context_name,
+                   manual_category_id, manual_context_id, manual_note, created_at, updated_at
+            FROM activity_segments
+            ORDER BY start_at ASC
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+
+        var segments: [ActivitySegment] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let segment = readSegment(statement) {
+                segments.append(segment)
+            }
+        }
+        return segments
+    }
+
     public func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] {
         let statement = try prepare(
             """
@@ -284,6 +305,24 @@ public final class SQLiteActivityStore {
             return nil
         }
         return readProjectSession(statement)
+    }
+
+    public func fetchSegmentDateBounds() throws -> DateInterval? {
+        let statement = try prepare("SELECT MIN(start_at), MAX(end_at) FROM activity_segments")
+        defer { sqlite3_finalize(statement) }
+
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            return nil
+        }
+
+        let startValue = sqlite3_column_double(statement, 0)
+        let endValue = sqlite3_column_double(statement, 1)
+
+        guard startValue > 0, endValue > 0 else {
+            return nil
+        }
+
+        return DateInterval(start: Date(timeIntervalSince1970: startValue), end: Date(timeIntervalSince1970: endValue))
     }
 
     public func upsertProjectSession(_ session: ProjectSession) throws {

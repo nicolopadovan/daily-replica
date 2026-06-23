@@ -35,6 +35,8 @@ final class PromptService {
             libraryService.addRule(kind: .chromeHost, pattern: host, categoryID: categoryID)
         } else if let bundleID = prompt.appBundleID {
             libraryService.addRule(kind: .appBundleID, pattern: bundleID, categoryID: categoryID)
+        } else if let appName = prompt.appName {
+            libraryService.addRule(kind: .appName, pattern: appName, categoryID: categoryID)
         }
         dismissPrompt()
     }

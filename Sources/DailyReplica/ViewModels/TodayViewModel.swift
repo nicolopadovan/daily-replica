@@ -5,12 +5,15 @@ import Foundation
 @MainActor
 final class TodayViewModel: ObservableObject {
     @Published var selectedSegmentID: UUID?
+    @Published var selectedSegmentIDs: Set<UUID> = []
     @Published var isCreatingCategory = false
     @Published var isCreatingProject = false
     @Published var newCategoryName = ""
     @Published var newProjectName = ""
     @Published var newProjectCategoryID = CategoryID.work.rawValue
     @Published var splitTime = Date()
+    @Published var pendingAutoSortBatch: AutoSortRuleBatch?
+    @Published var pendingAutoSortIsRetroactive = true
 
     weak var coordinator: AppCoordinating?
 
@@ -18,6 +21,7 @@ final class TodayViewModel: ObservableObject {
     private let libraryService: LibraryService
     private let segmentEditingService: SegmentEditingService
     private let dashboardService: DashboardService
+    private var rangeSelectionAnchorID: UUID?
     private var stateCancellable: AnyCancellable?
 
     init(
@@ -88,33 +92,93 @@ final class TodayViewModel: ObservableObject {
     }
 
     var selectedSegment: ActivitySegment? {
+        if selectedSegmentIDs.count == 1,
+           let selectedSegmentID = selectedSegmentIDs.first,
+           let segment = state.todaySegments.first(where: { $0.id == selectedSegmentID }) {
+            return segment
+        }
         if let selectedSegmentID,
            let segment = state.todaySegments.first(where: { $0.id == selectedSegmentID }) {
             return segment
         }
-        return state.todaySegments.last
+        return nil
+    }
+
+    var selectedSegments: [ActivitySegment] {
+        let ids = selectedSegmentIDs.isEmpty ? Set(selectedSegmentID.map { [$0] } ?? []) : selectedSegmentIDs
+        return state.todaySegments.filter { ids.contains($0.id) }
+    }
+
+    var selectedSegmentCount: Int {
+        selectedSegments.count
     }
 
     func reloadToday() {
         libraryService.reloadToday()
         dashboardService.reload()
-        selectLatestIfNeeded()
+        clearSelectionIfMissing()
     }
 
     func setDashboardPeriod(_ period: DashboardPeriod) {
         dashboardService.setPeriod(period)
     }
 
-    func selectLatestIfNeeded() {
-        if selectedSegmentID == nil || !state.todaySegments.contains(where: { $0.id == selectedSegmentID }) {
-            selectedSegmentID = state.todaySegments.last?.id
+    func clearSelectionIfMissing() {
+        let validIDs = Set(state.todaySegments.map(\.id))
+        selectedSegmentIDs.formIntersection(validIDs)
+        if let selectedSegmentID, !validIDs.contains(selectedSegmentID) {
+            self.selectedSegmentID = nil
+        }
+        if let rangeSelectionAnchorID, !validIDs.contains(rangeSelectionAnchorID) {
+            self.rangeSelectionAnchorID = selectedSegmentIDs.first ?? selectedSegmentID
         }
         resetSplitTime(for: selectedSegment)
     }
 
     func selectSegment(id: UUID) {
+        selectedSegmentIDs = [id]
+        selectedSegmentID = id
+        rangeSelectionAnchorID = id
+        resetSplitTime(for: selectedSegment)
+    }
+
+    func toggleSegmentSelection(id: UUID) {
+        if selectedSegmentIDs.contains(id) {
+            selectedSegmentIDs.remove(id)
+        } else {
+            selectedSegmentIDs.insert(id)
+        }
+        selectedSegmentID = selectedSegmentIDs.isEmpty ? nil : (selectedSegmentIDs.count == 1 ? selectedSegmentIDs.first : id)
+        rangeSelectionAnchorID = id
+        resetSplitTime(for: selectedSegment)
+    }
+
+    func selectSegmentRange(to id: UUID) {
+        guard let anchorID = rangeSelectionAnchorID ?? selectedSegmentID ?? selectedSegmentIDs.first,
+              let anchorIndex = state.todaySegments.firstIndex(where: { $0.id == anchorID }),
+              let endIndex = state.todaySegments.firstIndex(where: { $0.id == id }) else {
+            selectSegment(id: id)
+            return
+        }
+        let range = anchorIndex <= endIndex ? anchorIndex...endIndex : endIndex...anchorIndex
+        selectedSegmentIDs = Set(state.todaySegments[range].map(\.id))
         selectedSegmentID = id
         resetSplitTime(for: selectedSegment)
+    }
+
+    func selectSegments(ids: Set<UUID>) {
+        let validIDs = Set(state.todaySegments.map(\.id))
+        selectedSegmentIDs = ids.intersection(validIDs)
+        selectedSegmentID = selectedSegmentIDs.first
+        rangeSelectionAnchorID = selectedSegmentID
+        resetSplitTime(for: selectedSegment)
+    }
+
+    func clearSegmentSelection() {
+        selectedSegmentIDs = []
+        selectedSegmentID = nil
+        rangeSelectionAnchorID = nil
+        resetSplitTime(for: nil)
     }
 
     func displayName(for categoryID: String) -> String {
@@ -122,12 +186,48 @@ final class TodayViewModel: ObservableObject {
     }
 
     func editSegmentCategory(segmentID: UUID, categoryID: String) {
+        let original = state.todaySegments.first { $0.id == segmentID }
         segmentEditingService.editCategory(segmentID: segmentID, categoryID: categoryID)
         dashboardService.reload()
+        queueAutoSortPromptIfNeeded(for: original, categoryID: categoryID)
     }
 
     func editSegmentContext(segmentID: UUID, contextID: UUID?) {
         segmentEditingService.editContext(segmentID: segmentID, contextID: contextID)
+        dashboardService.reload()
+    }
+
+    func editSelectedSegmentsCategory(categoryID: String) {
+        let originals = selectedSegments
+        selectedSegments.forEach { segmentEditingService.editCategory(segmentID: $0.id, categoryID: categoryID) }
+        dashboardService.reload()
+        queueAutoSortPromptIfNeeded(for: originals, categoryID: categoryID)
+    }
+
+    func confirmPendingAutoSortRule() {
+        guard let pendingAutoSortBatch else {
+            return
+        }
+        for request in pendingAutoSortBatch.requests {
+            libraryService.addRule(
+                kind: request.kind,
+                pattern: request.pattern,
+                categoryID: request.categoryID,
+                retroactive: pendingAutoSortIsRetroactive
+            )
+        }
+        self.pendingAutoSortBatch = nil
+        pendingAutoSortIsRetroactive = true
+        dashboardService.reload()
+    }
+
+    func cancelPendingAutoSortRule() {
+        pendingAutoSortBatch = nil
+        pendingAutoSortIsRetroactive = true
+    }
+
+    func editSelectedSegmentsContext(contextID: UUID?) {
+        selectedSegments.forEach { segmentEditingService.editContext(segmentID: $0.id, contextID: contextID) }
         dashboardService.reload()
     }
 
@@ -145,6 +245,8 @@ final class TodayViewModel: ObservableObject {
             return
         }
         selectedSegmentID = right.id
+        selectedSegmentIDs = [right.id]
+        rangeSelectionAnchorID = right.id
         resetSplitTime(for: right)
         dashboardService.reload()
     }
@@ -156,6 +258,8 @@ final class TodayViewModel: ObservableObject {
             return
         }
         selectedSegmentID = merged.id
+        selectedSegmentIDs = [merged.id]
+        rangeSelectionAnchorID = merged.id
         resetSplitTime(for: merged)
         dashboardService.reload()
     }
@@ -167,6 +271,8 @@ final class TodayViewModel: ObservableObject {
             return
         }
         selectedSegmentID = merged.id
+        selectedSegmentIDs = [merged.id]
+        rangeSelectionAnchorID = merged.id
         resetSplitTime(for: merged)
         dashboardService.reload()
     }
@@ -192,6 +298,18 @@ final class TodayViewModel: ObservableObject {
 
     func openSettings() {
         coordinator?.openSettings()
+    }
+
+    func openProjects() {
+        coordinator?.openProjects()
+    }
+
+    func openCategories() {
+        coordinator?.openCategories()
+    }
+
+    func openAnalytics() {
+        coordinator?.openAnalytics()
     }
 
     func toggleCategoryCreation() {
@@ -226,5 +344,53 @@ final class TodayViewModel: ObservableObject {
         }
         editSegmentContext(segmentID: segmentID, contextID: context.id)
         cancelProjectCreation()
+    }
+
+    private func queueAutoSortPromptIfNeeded(for segment: ActivitySegment?, categoryID: String) {
+        guard let segment else {
+            return
+        }
+        queueAutoSortPromptIfNeeded(for: [segment], categoryID: categoryID)
+    }
+
+    private func queueAutoSortPromptIfNeeded(for segments: [ActivitySegment], categoryID: String) {
+        guard categoryID != CategoryID.unclassified.rawValue,
+              categoryID != CategoryID.inactive.rawValue else {
+            return
+        }
+        let requests = segments.compactMap { segment -> AutoSortRuleRequest? in
+            guard
+              segment.state == .active,
+              segment.categoryID == CategoryID.unclassified.rawValue,
+              let target = autoSortTarget(for: segment),
+              libraryService.existingRule(kind: target.kind, pattern: target.pattern) == nil else {
+                return nil
+            }
+            return AutoSortRuleRequest(
+                kind: target.kind,
+                pattern: target.pattern,
+                categoryID: categoryID,
+                title: target.title
+            )
+        }
+        let uniqueRequests = requests.reduce(into: [String: AutoSortRuleRequest]()) { partialResult, request in
+            partialResult["\(request.kind.rawValue):\(request.pattern)"] = request
+        }
+        let sortedRequests = uniqueRequests.values.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        guard !sortedRequests.isEmpty else {
+            return
+        }
+        pendingAutoSortBatch = AutoSortRuleBatch(requests: sortedRequests)
+        pendingAutoSortIsRetroactive = true
+    }
+
+    private func autoSortTarget(for segment: ActivitySegment) -> (kind: ClassificationRuleKind, pattern: String, title: String)? {
+        if let bundleID = segment.appBundleID, !bundleID.isEmpty {
+            return (.appBundleID, bundleID, segment.appName ?? bundleID)
+        }
+        if let appName = segment.appName, !appName.isEmpty {
+            return (.appName, appName, appName)
+        }
+        return nil
     }
 }

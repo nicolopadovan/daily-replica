@@ -107,6 +107,30 @@ final class LibraryServiceTests: XCTestCase {
         XCTAssertEqual(harness.state.todaySegments[0].manualCategoryID, CategoryID.work.rawValue)
         XCTAssertEqual(harness.store.upsertedSegments.count, 2)
     }
+
+    func testClassifyUncategorizedByAppNamePersistsBundlelessSegments() {
+        let harness = AppHarness()
+        let java = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 12),
+            state: .active,
+            appName: "java",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [java]
+        harness.store.segments = [java]
+
+        let count = harness.libraryService.classifyUncategorized(
+            kind: .appName,
+            pattern: "java",
+            categoryID: CategoryID.work.rawValue
+        )
+
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(harness.state.rules.first?.kind, .appName)
+        XCTAssertEqual(harness.state.todaySegments.first?.categoryID, CategoryID.work.rawValue)
+        XCTAssertEqual(harness.store.upsertedSegments.count, 1)
+    }
 }
 
 @MainActor
@@ -367,6 +391,253 @@ final class DashboardServiceTests: XCTestCase {
 }
 
 @MainActor
+final class AnalyticsServiceTests: XCTestCase {
+    func testDefaultPeriodStartsOnWeek() {
+        let harness = AppHarness()
+        _ = AnalyticsService(store: harness.store, state: harness.state)
+
+        XCTAssertEqual(harness.state.analyticsPeriod, .week)
+    }
+
+    func testMovePeriodQueriesExpectedIntervals() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let now = Self.date(year: 2026, month: 6, day: 23, hour: 12)
+        harness.store.segments = [
+            ActivitySegment(
+                start: now.addingTimeInterval(-20 * 24 * 3600),
+                end: now.addingTimeInterval(20 * 24 * 3600),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+
+        service.setPeriod(.week, now: now)
+
+        service.movePeriod(by: -1, now: now)
+        let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: now) ?? now
+        XCTAssertEqual(
+            harness.store.fetchedSegmentIntervals.last,
+            AnalyticsPeriod.week.interval(containing: previousWeek, calendar: calendar)
+        )
+
+        service.movePeriod(by: 1, now: now)
+        XCTAssertEqual(
+            harness.store.fetchedSegmentIntervals.last,
+            AnalyticsPeriod.week.interval(containing: now, calendar: calendar)
+        )
+    }
+
+    func testSelectDateTurnsOnDrilldownForThatDay() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let monday = Self.date(year: 2026, month: 6, day: 23, hour: 10)
+        let targetDay = monday
+            .advanced(by: 24 * 3600)
+        let laterDay = monday
+            .advanced(by: 2 * 24 * 3600)
+
+        harness.store.segments = [
+            ActivitySegment(
+                start: monday.addingTimeInterval(60),
+                end: monday.addingTimeInterval(660),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: targetDay.addingTimeInterval(120),
+                end: targetDay.addingTimeInterval(480),
+                state: .active,
+                appName: "Safari",
+                categoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: laterDay.addingTimeInterval(240),
+                end: laterDay.addingTimeInterval(540),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+
+        harness.state.analyticsDate = monday
+        service.selectDate(targetDay)
+
+        XCTAssertEqual(
+            harness.state.analyticsDrilldownDate,
+            DateInterval.day(containing: targetDay, calendar: calendar).start
+        )
+        XCTAssertEqual(harness.state.analyticsReport.totalDuration, 360)
+    }
+
+    func testReloadBuildsBoundsFromStoreHistory() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let dayStart = Self.date(year: 2026, month: 5, day: 20, hour: 9)
+        let laterSegmentEnd = Self.date(year: 2026, month: 5, day: 23, hour: 18)
+        harness.store.segments = [
+            ActivitySegment(
+                start: dayStart,
+                end: dayStart.addingTimeInterval(1200),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: laterSegmentEnd,
+                end: laterSegmentEnd.addingTimeInterval(600),
+                state: .active,
+                appName: "Safari",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+
+        service.reload(now: laterSegmentEnd.addingTimeInterval(1200))
+
+        XCTAssertEqual(harness.state.analyticsDateBounds?.start, dayStart)
+        XCTAssertEqual(harness.state.analyticsDateBounds?.end, laterSegmentEnd.addingTimeInterval(600))
+    }
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    private static func date(year: Int, month: Int, day: Int, hour: Int = 0) -> Date {
+        DateComponents(calendar: calendar, timeZone: TimeZone(secondsFromGMT: 0), year: year, month: month, day: day, hour: hour).date!
+    }
+}
+
+@MainActor
+final class AnalyticsViewModelTests: XCTestCase {
+    func testReportUpdatesForPeriodFilterAndDateChanges() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let viewModel = AnalyticsViewModel(state: harness.state, service: service, calendar: calendar)
+        let start = Self.date(year: 2026, month: 6, day: 23, hour: 10)
+        let next = calendar.date(byAdding: .day, value: 1, to: start)!
+
+        harness.state.categories = CategoryID.builtInDefinitions
+        harness.store.segments = [
+            ActivitySegment(
+                start: start.addingTimeInterval(600),
+                end: start.addingTimeInterval(1200),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: next.addingTimeInterval(60),
+                end: next.addingTimeInterval(420),
+                state: .active,
+                appName: "Safari",
+                categoryID: CategoryID.personal.rawValue
+            )
+        ]
+        harness.state.analyticsDate = start
+
+        viewModel.reload()
+        XCTAssertEqual(viewModel.selectedPeriod, .week)
+        XCTAssertEqual(viewModel.report.totalDuration, 960)
+
+        viewModel.setPeriod(.day)
+        XCTAssertEqual(viewModel.selectedPeriod, .day)
+        XCTAssertEqual(viewModel.report.totalDuration, 600)
+
+        viewModel.selectDrilldownDate(next)
+        XCTAssertEqual(viewModel.selectedDrilldownDate, DateInterval.day(containing: next, calendar: calendar).start)
+        XCTAssertEqual(viewModel.selectedDate, next)
+        XCTAssertEqual(viewModel.report.totalDuration, 360)
+
+        viewModel.setCategoryFilter(CategoryID.personal.rawValue)
+        XCTAssertEqual(viewModel.report.totalDuration, 360)
+        viewModel.setCategoryFilter(CategoryID.work.rawValue)
+        XCTAssertEqual(viewModel.report.totalDuration, 0)
+    }
+
+    func testClearFilterRestoresCurrentReport() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let viewModel = AnalyticsViewModel(state: harness.state, service: service, calendar: calendar)
+        let start = Self.date(year: 2026, month: 6, day: 23, hour: 10)
+
+        harness.store.segments = [
+            ActivitySegment(
+                start: start.addingTimeInterval(120),
+                end: start.addingTimeInterval(420),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            ),
+            ActivitySegment(
+                start: start.addingTimeInterval(600),
+                end: start.addingTimeInterval(900),
+                state: .active,
+                appName: "Safari",
+                categoryID: CategoryID.personal.rawValue
+            )
+        ]
+        harness.state.analyticsDate = start
+        harness.state.categories = CategoryID.builtInDefinitions
+        viewModel.reload()
+
+        let full = viewModel.report.totalDuration
+        viewModel.setCategoryFilter(CategoryID.work.rawValue)
+
+        XCTAssertEqual(viewModel.report.totalDuration, 300)
+        viewModel.clearFilter()
+        XCTAssertEqual(viewModel.report.totalDuration, full)
+    }
+
+    func testSelectedDrilldownDayFallsBackWhenItDisappears() {
+        let harness = AppHarness()
+        let calendar = Self.calendar
+        let service = AnalyticsService(store: harness.store, state: harness.state, calendar: calendar)
+        let viewModel = AnalyticsViewModel(state: harness.state, service: service, calendar: calendar)
+        let target = Self.date(year: 2026, month: 6, day: 23, hour: 10)
+
+        harness.store.segments = [
+            ActivitySegment(
+                start: target.addingTimeInterval(60),
+                end: target.addingTimeInterval(300),
+                state: .active,
+                appName: "Xcode",
+                categoryID: CategoryID.work.rawValue
+            )
+        ]
+        harness.state.analyticsDate = target
+        viewModel.selectDrilldownDate(target)
+        XCTAssertNotNil(viewModel.selectedDrilldownDate)
+
+        harness.store.segments = []
+        viewModel.reload()
+
+        XCTAssertNil(viewModel.selectedDrilldownDate)
+        XCTAssertEqual(viewModel.report.totalDuration, 0)
+    }
+
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.firstWeekday = 2
+        return calendar
+    }
+
+    private static func date(year: Int, month: Int, day: Int, hour: Int = 0) -> Date {
+        DateComponents(calendar: calendar, timeZone: TimeZone(secondsFromGMT: 0), year: year, month: month, day: day, hour: hour).date!
+    }
+}
+
+@MainActor
 final class PrivacyServiceTests: XCTestCase {
     func testJSONExportIncludesStoredData() throws {
         let harness = AppHarness()
@@ -608,6 +879,24 @@ final class PromptServiceTests: XCTestCase {
         XCTAssertNil(harness.state.activePrompt)
         XCTAssertTrue(harness.promptPresenter.didDismiss)
     }
+
+    func testCreateRuleFromBundlelessPromptUsesAppName() {
+        let harness = AppHarness()
+        let prompt = SmartPrompt(
+            kind: .unclassifiedActivity,
+            key: "unclassified:java",
+            title: "Classify java?",
+            message: "Message",
+            appName: "java",
+            currentCategoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.activePrompt = prompt
+
+        harness.promptService.createRule(from: prompt, categoryID: CategoryID.work.rawValue)
+
+        XCTAssertEqual(harness.store.rules.first?.kind, .appName)
+        XCTAssertEqual(harness.store.rules.first?.pattern, "java")
+    }
 }
 
 @MainActor
@@ -632,7 +921,23 @@ final class ViewModelTests: XCTestCase {
         XCTAssertNotNil(harness.state.todayProjectSessions.first?.end)
     }
 
-    func testTodayViewModelFallsBackWhenSelectedSegmentDisappears() {
+    func testTodayViewModelOpenAnalyticsDelegatesToCoordinator() {
+        let harness = AppHarness()
+        let coordinator = TestAppCoordinatorSpy()
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+        viewModel.coordinator = coordinator
+
+        viewModel.openAnalytics()
+
+        XCTAssertTrue(coordinator.didOpenAnalytics)
+    }
+
+    func testTodayViewModelClearsSelectionWhenSelectedSegmentDisappears() {
         let harness = AppHarness()
         let first = ActivitySegment(
             start: Date(timeIntervalSince1970: 10),
@@ -658,9 +963,175 @@ final class ViewModelTests: XCTestCase {
 
         viewModel.selectedSegmentID = first.id
         harness.state.todaySegments = [second]
-        viewModel.selectLatestIfNeeded()
+        viewModel.clearSelectionIfMissing()
 
-        XCTAssertEqual(viewModel.selectedSegment?.id, second.id)
+        XCTAssertNil(viewModel.selectedSegment)
+    }
+
+    func testTodayViewModelTogglesAndRangeSelectsSegments() {
+        let harness = AppHarness()
+        let first = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "First",
+            categoryID: CategoryID.work.rawValue
+        )
+        let second = ActivitySegment(
+            start: Date(timeIntervalSince1970: 20),
+            end: Date(timeIntervalSince1970: 30),
+            state: .active,
+            appName: "Second",
+            categoryID: CategoryID.personal.rawValue
+        )
+        let third = ActivitySegment(
+            start: Date(timeIntervalSince1970: 30),
+            end: Date(timeIntervalSince1970: 40),
+            state: .active,
+            appName: "Third",
+            categoryID: CategoryID.browsing.rawValue
+        )
+        harness.state.todaySegments = [first, second, third]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.selectSegment(id: first.id)
+        viewModel.selectSegmentRange(to: third.id)
+
+        XCTAssertEqual(viewModel.selectedSegmentIDs, [first.id, second.id, third.id])
+
+        viewModel.toggleSegmentSelection(id: second.id)
+
+        XCTAssertEqual(viewModel.selectedSegmentIDs, [first.id, third.id])
+
+        viewModel.selectSegment(id: first.id)
+        viewModel.toggleSegmentSelection(id: first.id)
+
+        XCTAssertTrue(viewModel.selectedSegmentIDs.isEmpty)
+        XCTAssertNil(viewModel.selectedSegmentID)
+    }
+
+    func testTodayViewModelBulkEditsSelectedSegments() {
+        let harness = AppHarness()
+        let context = ProjectContext(name: "Client", defaultCategoryID: CategoryID.work.rawValue)
+        let first = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appName: "First",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let second = ActivitySegment(
+            start: Date(timeIntervalSince1970: 20),
+            end: Date(timeIntervalSince1970: 30),
+            state: .active,
+            appName: "Second",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.contexts = [context]
+        harness.state.todaySegments = [first, second]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.selectSegments(ids: [first.id, second.id])
+        viewModel.editSelectedSegmentsCategory(categoryID: CategoryID.work.rawValue)
+        viewModel.editSelectedSegmentsContext(contextID: context.id)
+
+        XCTAssertEqual(Set(harness.state.todaySegments.map(\.categoryID)), [CategoryID.work.rawValue])
+        XCTAssertEqual(Set(harness.state.todaySegments.compactMap(\.contextID)), [context.id])
+        XCTAssertEqual(harness.store.upsertedSegments.count, 4)
+    }
+
+    func testTodayViewModelPromptsForAutoSortAfterUnclassifiedAppEdit() {
+        let harness = AppHarness()
+        let earlier = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appBundleID: "com.example.Editor",
+            appName: "Editor",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let selected = ActivitySegment(
+            start: Date(timeIntervalSince1970: 20),
+            end: Date(timeIntervalSince1970: 30),
+            state: .active,
+            appBundleID: "com.example.Editor",
+            appName: "Editor",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [earlier, selected]
+        harness.store.segments = [earlier, selected]
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.editSegmentCategory(segmentID: selected.id, categoryID: CategoryID.work.rawValue)
+
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.kind, .appBundleID)
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.first?.pattern, "com.example.Editor")
+        XCTAssertTrue(viewModel.pendingAutoSortIsRetroactive)
+
+        viewModel.confirmPendingAutoSortRule()
+
+        XCTAssertEqual(harness.state.rules.first?.pattern, "com.example.Editor")
+        XCTAssertEqual(Set(harness.state.todaySegments.map(\.categoryID)), [CategoryID.work.rawValue])
+    }
+
+    func testTodayViewModelBulkEditPromptsForMultipleAutoSortRules() {
+        let harness = AppHarness()
+        let editor = ActivitySegment(
+            start: Date(timeIntervalSince1970: 10),
+            end: Date(timeIntervalSince1970: 20),
+            state: .active,
+            appBundleID: "com.example.Editor",
+            appName: "Editor",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let java = ActivitySegment(
+            start: Date(timeIntervalSince1970: 20),
+            end: Date(timeIntervalSince1970: 30),
+            state: .active,
+            appName: "java",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        let duplicateEditor = ActivitySegment(
+            start: Date(timeIntervalSince1970: 30),
+            end: Date(timeIntervalSince1970: 40),
+            state: .active,
+            appBundleID: "com.example.Editor",
+            appName: "Editor",
+            categoryID: CategoryID.unclassified.rawValue
+        )
+        harness.state.todaySegments = [editor, java, duplicateEditor]
+        harness.store.segments = harness.state.todaySegments
+        let viewModel = TodayViewModel(
+            state: harness.state,
+            libraryService: harness.libraryService,
+            segmentEditingService: harness.segmentEditingService,
+            dashboardService: harness.dashboardService
+        )
+
+        viewModel.selectSegments(ids: [editor.id, java.id, duplicateEditor.id])
+        viewModel.editSelectedSegmentsCategory(categoryID: CategoryID.work.rawValue)
+
+        XCTAssertEqual(viewModel.pendingAutoSortBatch?.requests.map(\.pattern), ["com.example.Editor", "java"])
+        XCTAssertTrue(viewModel.pendingAutoSortIsRetroactive)
+
+        viewModel.confirmPendingAutoSortRule()
+
+        XCTAssertEqual(Set(harness.state.rules.map(\.pattern)), ["com.example.Editor", "java"])
     }
 
     func testTodayViewModelSplitSelectsRightHalf() {
@@ -894,6 +1365,7 @@ final class ViewModelTests: XCTestCase {
             return XCTFail("Expected a rule suggestion")
         }
         viewModel.acceptRuleSuggestion(suggestion)
+        viewModel.confirmPendingAutoSortRule()
 
         XCTAssertEqual(harness.state.rules.first?.kind, .appBundleID)
         XCTAssertEqual(harness.state.rules.first?.pattern, "com.example.Editor")
@@ -924,8 +1396,9 @@ final class ViewModelTests: XCTestCase {
             return XCTFail("Expected an uncategorized candidate")
         }
         let changed = viewModel.classifyUncategorized(candidate)
+        viewModel.confirmPendingAutoSortRule()
 
-        XCTAssertEqual(changed, 1)
+        XCTAssertEqual(changed, 0)
         XCTAssertEqual(harness.state.rules.first?.categoryID, CategoryID.personal.rawValue)
         XCTAssertEqual(harness.state.todaySegments.first?.categoryID, CategoryID.personal.rawValue)
     }
@@ -1108,6 +1581,10 @@ private final class InMemoryActivityStore: ActivityStore {
         return segments.filter { $0.start < interval.end && $0.end >= interval.start }
     }
 
+    func fetchAllSegments() throws -> [ActivitySegment] {
+        segments
+    }
+
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] {
         fetchedProjectSessionIntervals.append(interval)
         return projectSessions.filter { $0.start < interval.end && ($0.end ?? .distantFuture) >= interval.start }
@@ -1183,6 +1660,40 @@ private final class TestActivityEventObserver: ActivityEventObserving {
     func stop() {
         isStarted = false
     }
+}
+
+private final class TestAppCoordinatorSpy: AppCoordinating {
+    var didOpenToday = false
+    var didOpenAnalytics = false
+    var didOpenSettings = false
+    var didOpenProjects = false
+    var didOpenCategories = false
+
+    func openToday() {
+        didOpenToday = true
+    }
+
+    func openAnalytics() {
+        didOpenAnalytics = true
+    }
+
+    func openSettings() {
+        didOpenSettings = true
+    }
+
+    func openProjects() {
+        didOpenProjects = true
+    }
+
+    func openCategories() {
+        didOpenCategories = true
+    }
+
+    func quit() {}
+
+    func showPrompt(_ prompt: SmartPrompt) {}
+
+    func dismissPrompt() {}
 }
 
 @MainActor

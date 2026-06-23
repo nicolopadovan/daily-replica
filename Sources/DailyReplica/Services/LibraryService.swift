@@ -1,6 +1,19 @@
 import DailyReplicaCore
 import Foundation
 
+struct AutoSortRuleRequest: Identifiable, Equatable {
+    let id = UUID()
+    let kind: ClassificationRuleKind
+    let pattern: String
+    let categoryID: String
+    let title: String
+}
+
+struct AutoSortRuleBatch: Identifiable, Equatable {
+    let id = UUID()
+    let requests: [AutoSortRuleRequest]
+}
+
 @MainActor
 final class LibraryService {
     private let store: ActivityStore
@@ -108,18 +121,23 @@ final class LibraryService {
     }
 
     @discardableResult
-    func addRule(kind: ClassificationRuleKind, pattern: String, categoryID: String) -> ClassificationRule? {
+    func addRule(kind: ClassificationRuleKind, pattern: String, categoryID: String, retroactive: Bool = false) -> ClassificationRule? {
         let normalized = ClassificationRule.normalizedPattern(pattern, kind: kind)
         guard !normalized.isEmpty else {
             return nil
         }
+        let rule: ClassificationRule?
         if let index = state.rules.firstIndex(where: { $0.kind == kind && $0.pattern == normalized }) {
-            var rule = state.rules[index]
-            rule.categoryID = categoryID
-            return persistRule(rule, replacingIndex: index)
+            var existingRule = state.rules[index]
+            existingRule.categoryID = categoryID
+            rule = persistRule(existingRule, replacingIndex: index)
+        } else {
+            rule = persistRule(ClassificationRule(kind: kind, pattern: normalized, categoryID: categoryID))
         }
-        let rule = ClassificationRule(kind: kind, pattern: normalized, categoryID: categoryID)
-        return persistRule(rule)
+        if retroactive, let rule {
+            applyRuleRetroactively(rule)
+        }
+        return rule
     }
 
     func updateRuleCategory(id: UUID, categoryID: String) {
@@ -133,28 +151,47 @@ final class LibraryService {
 
     @discardableResult
     func classifyUncategorized(kind: ClassificationRuleKind, pattern: String, categoryID: String) -> Int {
-        guard let rule = addRule(kind: kind, pattern: pattern, categoryID: categoryID) else {
+        let rule = ClassificationRule(kind: kind, pattern: ClassificationRule.normalizedPattern(pattern, kind: kind), categoryID: categoryID)
+        let changedCount = matchingUnclassifiedSegmentCount(for: rule)
+        guard addRule(kind: kind, pattern: pattern, categoryID: categoryID, retroactive: true) != nil else {
             return 0
         }
-
-        var changedCount = 0
-        for index in state.todaySegments.indices {
-            let segment = state.todaySegments[index]
-            guard segment.categoryID == CategoryID.unclassified.rawValue,
-                  segmentMatchesRule(segment, rule: rule) else {
-                continue
-            }
-
-            let edited = segment.applyingManualEdit(categoryID: categoryID)
-            do {
-                try store.upsertSegment(edited)
-                state.todaySegments[index] = edited
-                changedCount += 1
-            } catch {
-                state.lastError = error.localizedDescription
-            }
-        }
         return changedCount
+    }
+
+    @discardableResult
+    func applyRuleRetroactively(_ rule: ClassificationRule) -> Int {
+        do {
+            let allSegments = try store.fetchAllSegments()
+            var changedCount = 0
+            for segment in allSegments where shouldApply(rule, to: segment) {
+                let edited = segment.applyingManualEdit(categoryID: rule.categoryID)
+                try store.upsertSegment(edited)
+                if let index = state.todaySegments.firstIndex(where: { $0.id == edited.id }) {
+                    state.todaySegments[index] = edited
+                }
+                changedCount += 1
+            }
+            return changedCount
+        } catch {
+            state.lastError = error.localizedDescription
+            return 0
+        }
+    }
+
+    func existingRule(kind: ClassificationRuleKind, pattern: String) -> ClassificationRule? {
+        let normalized = ClassificationRule.normalizedPattern(pattern, kind: kind)
+        return state.rules.first { $0.kind == kind && $0.pattern == normalized }
+    }
+
+    private func matchingUnclassifiedSegmentCount(for rule: ClassificationRule) -> Int {
+        state.todaySegments.filter { shouldApply(rule, to: $0) }.count
+    }
+
+    private func shouldApply(_ rule: ClassificationRule, to segment: ActivitySegment) -> Bool {
+        segment.state == .active &&
+            segment.categoryID == CategoryID.unclassified.rawValue &&
+            segmentMatchesRule(segment, rule: rule)
     }
 
     private func persistRule(_ rule: ClassificationRule, replacingIndex index: Int? = nil) -> ClassificationRule? {
@@ -210,6 +247,8 @@ final class LibraryService {
         switch rule.kind {
         case .appBundleID:
             return segment.appBundleID == rule.pattern
+        case .appName:
+            return segment.appBundleID == nil && segment.appName == rule.pattern
         case .chromeHost:
             guard let host = segment.urlHost ?? segment.urlString.flatMap({ URL(string: $0)?.host }) else {
                 return false

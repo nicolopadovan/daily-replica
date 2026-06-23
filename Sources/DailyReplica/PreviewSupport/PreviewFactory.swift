@@ -42,6 +42,10 @@ enum PreviewFactory {
         return viewModel
     }
 
+    static func analyticsViewModel() -> AnalyticsViewModel {
+        makeFixture().analyticsViewModel
+    }
+
     static func smartPromptViewModel(kind: SmartPromptKind = .unclassifiedActivity) -> SmartPromptViewModel {
         let fixture = makeFixture()
         let prompt = SmartPrompt(
@@ -92,6 +96,7 @@ enum PreviewFactory {
             contextPersistence: contextPersistence
         )
         let dashboardService = DashboardService(store: store, state: state)
+        let analyticsService = AnalyticsService(store: store, state: state)
         let privacyService = PrivacyService(
             store: store,
             state: state,
@@ -128,8 +133,13 @@ enum PreviewFactory {
         state.todaySegments = sampleSegments(context: context)
         state.dashboardSegments = state.todaySegments
         state.dashboardProjectSessions = state.todayProjectSessions
+        let coordinator = PreviewCoordinator()
         store.segments = state.todaySegments
         store.projectSessions = state.todayProjectSessions
+
+        let analyticsViewModel = AnalyticsViewModel(state: state, service: analyticsService)
+        analyticsViewModel.coordinator = coordinator
+        analyticsViewModel.reload()
         state.lastSampleDescription = "Xcode · Work · github.com"
         state.accessibilityTrusted = false
 
@@ -139,10 +149,12 @@ enum PreviewFactory {
             segmentEditingService: segmentEditingService,
             projectSessionService: projectSessionService,
             dashboardService: dashboardService,
+            analyticsService: analyticsService,
             privacyService: privacyService,
+            analyticsViewModel: analyticsViewModel,
             promptService: promptService,
             trackingService: trackingService,
-            coordinator: PreviewCoordinator()
+            coordinator: coordinator
         )
     }
 
@@ -220,7 +232,9 @@ private struct PreviewFixture {
     let segmentEditingService: SegmentEditingService
     let projectSessionService: ProjectSessionService
     let dashboardService: DashboardService
+    let analyticsService: AnalyticsService
     let privacyService: PrivacyService
+    let analyticsViewModel: AnalyticsViewModel
     let promptService: PromptService
     let trackingService: TrackingService
     let coordinator: AppCoordinating
@@ -243,6 +257,7 @@ private final class PreviewActivityStore: ActivityStore {
     func upsertSegment(_ segment: ActivitySegment) throws { segments.append(segment) }
     func deleteSegment(id: UUID) throws { segments.removeAll { $0.id == id } }
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment] { segments }
+    func fetchAllSegments() throws -> [ActivitySegment] { segments }
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession] { projectSessions }
     func fetchOpenProjectSession() throws -> ProjectSession? { projectSessions.last { $0.end == nil } }
     func upsertProjectSession(_ session: ProjectSession) throws { projectSessions.append(session) }
@@ -283,7 +298,10 @@ private struct PreviewSampler: ActivitySampling {
 @MainActor
 private final class PreviewCoordinator: AppCoordinating {
     func openToday() {}
+    func openAnalytics() {}
     func openSettings() {}
+    func openProjects() {}
+    func openCategories() {}
     func quit() {}
     func showPrompt(_ prompt: SmartPrompt) {}
     func dismissPrompt() {}

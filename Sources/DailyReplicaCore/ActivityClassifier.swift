@@ -28,6 +28,12 @@ public struct ActivityClassifier: Sendable {
             return ClassificationResult(categoryID: rule.categoryID, matchedRule: rule)
         }
 
+        if sample.appBundleID == nil,
+           let appName = sample.appName,
+           let rule = rules.first(where: { $0.kind == .appName && $0.pattern == appName }) {
+            return ClassificationResult(categoryID: rule.categoryID, matchedRule: rule)
+        }
+
         return ClassificationResult(categoryID: CategoryID.unclassified.rawValue)
     }
 

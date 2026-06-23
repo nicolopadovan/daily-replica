@@ -10,6 +10,12 @@ final class AppState: ObservableObject {
     @Published var todayProjectSessions: [ProjectSession] = []
     @Published var dashboardPeriod: DashboardPeriod = .day
     @Published var dashboardInterval = DashboardPeriod.day.interval(containing: Date())
+    @Published var analyticsPeriod: AnalyticsPeriod = .week
+    @Published var analyticsDate = Date()
+    @Published var analyticsDrilldownDate: Date?
+    @Published var analyticsFilter = AnalyticsFilter()
+    @Published var analyticsDateBounds: DateInterval?
+    @Published var analyticsReport = AnalyticsReport.empty
     @Published var dashboardSegments: [ActivitySegment] = []
     @Published var dashboardProjectSessions: [ProjectSession] = []
     @Published var rules: [ClassificationRule] = []

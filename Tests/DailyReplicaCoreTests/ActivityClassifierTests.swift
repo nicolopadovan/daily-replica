@@ -46,6 +46,23 @@ final class ActivityClassifierTests: XCTestCase {
         XCTAssertFalse(ActivityClassifier.host("notgithub.com", matches: "github.com"))
     }
 
+    func testAppNameRuleMatchesBundlelessProcess() {
+        let classifier = ActivityClassifier()
+        let sample = FocusSample(
+            timestamp: Date(timeIntervalSince1970: 10),
+            state: .active,
+            appName: "java"
+        )
+
+        let result = classifier.classify(
+            sample,
+            rules: [ClassificationRule(kind: .appName, pattern: "java", categoryID: CategoryID.work.rawValue)]
+        )
+
+        XCTAssertEqual(result.categoryID, CategoryID.work.rawValue)
+        XCTAssertEqual(result.matchedRule?.kind, .appName)
+    }
+
     func testUnknownActiveAppIsUnclassified() {
         let classifier = ActivityClassifier()
         let sample = FocusSample(

@@ -11,6 +11,7 @@ final class UpdateService: ObservableObject {
     @Published private(set) var feedURL: URL?
 
     private let updaterController: SPUStandardUpdaterController?
+    private let updateDriverDelegate: UpdateGentleReminderDelegate?
     private var observations: [NSKeyValueObservation] = []
 
     var isConfigured: Bool {
@@ -23,10 +24,13 @@ final class UpdateService: ObservableObject {
             return
         }
 
+        let driverDelegate = UpdateGentleReminderDelegate()
+        updateDriverDelegate = driverDelegate
+
         let controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
-            userDriverDelegate: nil
+            userDriverDelegate: driverDelegate
         )
         updaterController = controller
         observations = [
@@ -75,5 +79,16 @@ final class UpdateService: ObservableObject {
             return false
         }
         return true
+    }
+}
+
+private final class UpdateGentleReminderDelegate: NSObject, SPUStandardUserDriverDelegate {
+    // ponytail: this exists to declare support for Sparkle gentle reminders for backgrounded checks.
+    var supportsGentleScheduledUpdateReminders: Bool {
+        true
+    }
+
+    func standardUserDriverShouldHandleShowingScheduledUpdate(_ handleShowingUpdate: Bool, andInImmediateFocus immediateFocus: Bool) -> Bool {
+        false
     }
 }

@@ -98,7 +98,7 @@ struct MenuBarView: View {
                 .pickerStyle(.menu)
 
                 HStack {
-                    Label("Project time", systemImage: "folder.badge.clock")
+                    Label("Project time", systemImage: "clock.fill")
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text(viewModel.currentProjectElapsed)
@@ -204,7 +204,7 @@ struct MenuBarView: View {
             Button {
                 viewModel.openSettings()
             } label: {
-                Label("Set up", systemImage: "slider.horizontal.3")
+                Label("Organize", systemImage: "slider.horizontal.3")
                     .frame(maxWidth: .infinity)
             }
 

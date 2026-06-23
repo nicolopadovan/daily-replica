@@ -1,11 +1,15 @@
 import DailyReplicaCore
+import AppKit
 import SwiftUI
 
 struct TodayView: View {
     @ObservedObject var viewModel: TodayViewModel
+    @State private var rowFrames: [UUID: CGRect] = [:]
+    @State private var dragStart: CGPoint?
+    @State private var dragCurrent: CGPoint?
 
     var body: some View {
-        NavigationSplitView {
+        HSplitView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     journalHeader
@@ -37,18 +41,33 @@ struct TodayView: View {
                 .frame(minWidth: 760, maxWidth: .infinity, alignment: .leading)
             }
             .background(CalmPalette.porcelain.opacity(0.55))
-            .navigationSplitViewColumnWidth(min: 760, ideal: 900)
-        } detail: {
-            SegmentInspector(viewModel: viewModel, segment: viewModel.selectedSegment)
-                .frame(maxHeight: .infinity)
-                .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 380)
-                .background(.background)
+            .frame(minWidth: 760, maxWidth: .infinity, maxHeight: .infinity)
+
+            if viewModel.selectedSegmentCount > 1 {
+                BulkSegmentInspector(viewModel: viewModel)
+                    .frame(minWidth: 300, idealWidth: 340, maxWidth: 380, maxHeight: .infinity)
+                    .background(.background)
+            } else if let selectedSegment = viewModel.selectedSegment {
+                SegmentInspector(viewModel: viewModel, segment: selectedSegment)
+                    .frame(minWidth: 300, idealWidth: 340, maxWidth: 380, maxHeight: .infinity)
+                    .background(.background)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             viewModel.reloadToday()
         }
         .onChange(of: viewModel.todaySegments.count) { _, _ in
-            viewModel.selectLatestIfNeeded()
+            viewModel.clearSelectionIfMissing()
+        }
+        .sheet(item: $viewModel.pendingAutoSortBatch) { batch in
+            AutoSortRuleConfirmationSheet(
+                batch: batch,
+                categoryName: { viewModel.displayName(for: $0) },
+                isRetroactive: $viewModel.pendingAutoSortIsRetroactive,
+                onCancel: { viewModel.cancelPendingAutoSortRule() },
+                onConfirm: { viewModel.confirmPendingAutoSortRule() }
+            )
         }
     }
 
@@ -76,13 +95,6 @@ struct TodayView: View {
                     systemImage: viewModel.isTracking ? "record.circle.fill" : "pause.circle.fill"
                 )
             }
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
-                MetricTile(title: "Tracked", value: DurationFormatter.format(viewModel.todaySummary.totalDuration), tint: CalmPalette.cypress, symbol: "clock")
-                MetricTile(title: "Active", value: DurationFormatter.format(viewModel.todaySummary.activeDuration), tint: CalmPalette.signalBlue, symbol: "bolt.fill")
-                MetricTile(title: "Inactive", value: DurationFormatter.format(viewModel.todaySummary.inactiveDuration), tint: CalmPalette.graphite, symbol: "moon.zzz.fill")
-                MetricTile(title: "Unsorted", value: DurationFormatter.format(viewModel.todaySummary.unclassifiedDuration), tint: CalmPalette.persimmon, symbol: "tag.slash.fill")
-            }
         }
         .journalSurface(padding: 18)
     }
@@ -106,16 +118,7 @@ struct TodayView: View {
     private var dashboardPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
-                JournalSectionHeader(title: "Screen Time", detail: viewModel.dashboardIntervalTitle)
-
-                Picker("Period", selection: dashboardPeriodBinding) {
-                    ForEach(DashboardPeriod.allCases) { period in
-                        Text(period.displayName).tag(period)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 210)
+                JournalSectionHeader(title: "Screen Time", detail: Date().formatted(date: .long, time: .omitted))
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
@@ -145,10 +148,6 @@ struct TodayView: View {
                 )
             }
 
-            if !viewModel.dashboardDailyTotals.isEmpty {
-                DashboardDailyTotalsStrip(totals: viewModel.dashboardDailyTotals)
-            }
-
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
                 DashboardRankList(
                     title: "Categories",
@@ -176,15 +175,17 @@ struct TodayView: View {
                     tint: CalmPalette.iris
                 )
             }
+
+            Button {
+                viewModel.openAnalytics()
+            } label: {
+                Label("View analytics", systemImage: "chart.bar")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(CalmPalette.cypress)
         }
         .journalSurface()
-    }
-
-    private var dashboardPeriodBinding: Binding<DashboardPeriod> {
-        Binding(
-            get: { viewModel.dashboardPeriod },
-            set: { viewModel.setDashboardPeriod($0) }
-        )
     }
 
     private var timeline: some View {
@@ -193,12 +194,90 @@ struct TodayView: View {
                 TimelineSegmentRow(
                     viewModel: viewModel,
                     segment: segment,
-                    isSelected: viewModel.selectedSegment?.id == segment.id,
-                    onSelect: { viewModel.selectSegment(id: segment.id) }
+                    isSelected: viewModel.selectedSegmentIDs.contains(segment.id) || viewModel.selectedSegmentID == segment.id,
+                    onSelect: { selectSegment(segment.id) }
                 )
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: TimelineRowFramePreferenceKey.self,
+                            value: [segment.id: proxy.frame(in: .named("timeline"))]
+                        )
+                    }
+                }
             }
         }
         .padding(.bottom, 12)
+        .coordinateSpace(name: "timeline")
+        .onPreferenceChange(TimelineRowFramePreferenceKey.self) { value in
+            guard value != rowFrames else { return }
+            rowFrames = value
+        }
+        .overlay(alignment: .topLeading) {
+            if let marqueeRect {
+                Rectangle()
+                    .fill(CalmPalette.cypress.opacity(0.12))
+                    .overlay {
+                        Rectangle()
+                            .stroke(CalmPalette.cypress.opacity(0.55), lineWidth: 1)
+                    }
+                    .frame(width: marqueeRect.width, height: marqueeRect.height)
+                    .offset(x: marqueeRect.minX, y: marqueeRect.minY)
+                    .allowsHitTesting(false)
+            }
+        }
+        .gesture(marqueeGesture)
+    }
+
+    private var marqueeGesture: some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .named("timeline"))
+            .onChanged { value in
+                if dragStart == nil {
+                    dragStart = value.startLocation
+                }
+                dragCurrent = value.location
+            }
+            .onEnded { _ in
+                if let marqueeRect {
+                    let selectedIDs = rowFrames.compactMap { id, frame in
+                        frame.intersects(marqueeRect) ? id : nil
+                    }
+                    viewModel.selectSegments(ids: Set(selectedIDs))
+                }
+                dragStart = nil
+                dragCurrent = nil
+            }
+    }
+
+    private var marqueeRect: CGRect? {
+        guard let dragStart, let dragCurrent else {
+            return nil
+        }
+        return CGRect(
+            x: min(dragStart.x, dragCurrent.x),
+            y: min(dragStart.y, dragCurrent.y),
+            width: abs(dragCurrent.x - dragStart.x),
+            height: abs(dragCurrent.y - dragStart.y)
+        )
+    }
+
+    private func selectSegment(_ id: UUID) {
+        let flags = NSEvent.modifierFlags
+        if flags.contains(.shift) {
+            viewModel.selectSegmentRange(to: id)
+        } else if flags.contains(.command) {
+            viewModel.toggleSegmentSelection(id: id)
+        } else {
+            viewModel.selectSegment(id: id)
+        }
+    }
+}
+
+private struct TimelineRowFramePreferenceKey: PreferenceKey {
+    static let defaultValue: [UUID: CGRect] = [:]
+
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
 
@@ -461,7 +540,7 @@ struct TimelineSegmentRow: View {
             }
             Divider()
             Button("Create new category...") {
-                viewModel.openSettings()
+                viewModel.openCategories()
             }
         } label: {
             CategoryPill(title: viewModel.displayName(for: segment.categoryID), categoryID: segment.categoryID)
@@ -481,7 +560,7 @@ struct TimelineSegmentRow: View {
             }
             Divider()
             Button("Create new project...") {
-                viewModel.openSettings()
+                viewModel.openProjects()
             }
         } label: {
             Label(segment.contextName ?? "No project", systemImage: "folder.fill")
@@ -494,30 +573,166 @@ struct TimelineSegmentRow: View {
     }
 }
 
-struct SegmentInspector: View {
-    @ObservedObject var viewModel: TodayViewModel
-    let segment: ActivitySegment?
+struct AutoSortRuleConfirmationSheet: View {
+    let batch: AutoSortRuleBatch
+    let categoryName: (String) -> String
+    @Binding var isRetroactive: Bool
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if let segment {
-                header(for: segment)
-                Divider()
-                correctionControls(for: segment)
-                timelineEditingControls(for: segment)
-                metadata(for: segment)
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.title3.bold())
+            Text(message)
+                .foregroundStyle(.secondary)
+            if batch.requests.count > 1 {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(batch.requests) { request in
+                        HStack {
+                            Text(request.title)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(categoryName(request.categoryID))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .font(.subheadline)
+                .padding(10)
+                .background(CalmPalette.mist.opacity(0.35), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            Toggle("Apply to past unclassified entries", isOn: $isRetroactive)
+            HStack {
                 Spacer()
-            } else {
-                EmptyJournalState(
-                    title: "Select a segment",
-                    message: "Choose a row to see details and fix its category or project.",
-                    systemImage: "sidebar.right"
-                )
-                .padding(20)
-                Spacer()
+                Button("Cancel", action: onCancel)
+                Button(confirmTitle, action: onConfirm)
+                    .buttonStyle(.borderedProminent)
+                    .tint(CalmPalette.cypress)
             }
         }
         .padding(22)
+        .frame(width: 420)
+    }
+
+    private var title: String {
+        if let request = batch.requests.first, batch.requests.count == 1 {
+            return "Auto-sort \(request.title)?"
+        }
+        return "Create \(batch.requests.count) auto-sort rules?"
+    }
+
+    private var message: String {
+        if let request = batch.requests.first, batch.requests.count == 1 {
+            return "Future entries matching this app will go to \(categoryName(request.categoryID))."
+        }
+        return "Future matching entries will use these categories."
+    }
+
+    private var confirmTitle: String {
+        batch.requests.count == 1 ? "Create rule" : "Create rules"
+    }
+}
+
+struct BulkSegmentInspector: View {
+    @ObservedObject var viewModel: TodayViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            closeButton
+            VStack(alignment: .leading, spacing: 6) {
+                Text("\(viewModel.selectedSegmentCount) entries selected")
+                    .font(.title3.bold())
+                Text(DurationFormatter.format(totalDuration))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Divider()
+            bulkControls
+            Spacer()
+        }
+        .padding(22)
+    }
+
+    private var closeButton: some View {
+        HStack {
+            Spacer()
+            Button {
+                viewModel.clearSegmentSelection()
+            } label: {
+                Image(systemName: "xmark")
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("Close details")
+        }
+    }
+
+    private var bulkControls: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            JournalSectionHeader(title: "Edit selected entries")
+
+            Menu {
+                ForEach(viewModel.categories) { category in
+                    Button(category.name) {
+                        viewModel.editSelectedSegmentsCategory(categoryID: category.id)
+                    }
+                }
+            } label: {
+                Label("Change category", systemImage: "tag.fill")
+            }
+
+            Menu {
+                Button("No project") {
+                    viewModel.editSelectedSegmentsContext(contextID: nil)
+                }
+                ForEach(viewModel.contexts) { context in
+                    Button(context.name) {
+                        viewModel.editSelectedSegmentsContext(contextID: context.id)
+                    }
+                }
+            } label: {
+                Label("Change project", systemImage: "folder.fill")
+            }
+        }
+        .journalSurface()
+    }
+
+    private var totalDuration: TimeInterval {
+        viewModel.selectedSegments.reduce(0) { $0 + $1.duration }
+    }
+}
+
+struct SegmentInspector: View {
+    @ObservedObject var viewModel: TodayViewModel
+    let segment: ActivitySegment
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            closeButton
+            header(for: segment)
+            Divider()
+            correctionControls(for: segment)
+            timelineEditingControls(for: segment)
+            metadata(for: segment)
+            Spacer()
+        }
+        .padding(22)
+    }
+
+    private var closeButton: some View {
+        HStack {
+            Spacer()
+            Button {
+                viewModel.clearSegmentSelection()
+            } label: {
+                Image(systemName: "xmark")
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("Close details")
+        }
     }
 
     private func header(for segment: ActivitySegment) -> some View {

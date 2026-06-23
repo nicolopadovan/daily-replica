@@ -32,6 +32,9 @@
 		010100000000000000000017 /* DashboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000018 /* DashboardService.swift */; };
 		010100000000000000000018 /* PrivacyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020100000000000000000019 /* PrivacyService.swift */; };
 		010100000000000000000019 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000001A /* UpdateService.swift */; };
+		01010000000000000000001B /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000001B /* AnalyticsService.swift */; };
+		01010000000000000000001C /* AnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000001C /* AnalyticsViewModel.swift */; };
+		01010000000000000000001D /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02010000000000000000001D /* AnalyticsView.swift */; };
 		010200000000000000000001 /* ActivityClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000001 /* ActivityClassifier.swift */; };
 		010200000000000000000002 /* ActivityDayPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000002 /* ActivityDayPresentation.swift */; };
 		010200000000000000000003 /* ActivitySegmentReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000003 /* ActivitySegmentReducer.swift */; };
@@ -40,6 +43,7 @@
 		010200000000000000000006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000006 /* Models.swift */; };
 		010200000000000000000007 /* SQLiteActivityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000007 /* SQLiteActivityStore.swift */; };
 		010200000000000000000008 /* SmartPromptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000008 /* SmartPromptEngine.swift */; };
+		01020000000000000000000C /* AnalyticsPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000C /* AnalyticsPresentation.swift */; };
 		010200000000000000000009 /* ActivityDashboardPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020200000000000000000009 /* ActivityDashboardPresentation.swift */; };
 		01020000000000000000000A /* ClassificationCandidates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000A /* ClassificationCandidates.swift */; };
 		01020000000000000000000B /* ActivityDataExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02020000000000000000000B /* ActivityDataExport.swift */; };
@@ -106,6 +110,9 @@
 		020100000000000000000018 /* DashboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardService.swift; sourceTree = "<group>"; };
 		020100000000000000000019 /* PrivacyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyService.swift; sourceTree = "<group>"; };
 		02010000000000000000001A /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
+		02010000000000000000001B /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
+		02010000000000000000001C /* AnalyticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsViewModel.swift; sourceTree = "<group>"; };
+		02010000000000000000001D /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		020200000000000000000001 /* ActivityClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityClassifier.swift; sourceTree = "<group>"; };
 		020200000000000000000002 /* ActivityDayPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDayPresentation.swift; sourceTree = "<group>"; };
 		020200000000000000000003 /* ActivitySegmentReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySegmentReducer.swift; sourceTree = "<group>"; };
@@ -117,6 +124,7 @@
 		020200000000000000000009 /* ActivityDashboardPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDashboardPresentation.swift; sourceTree = "<group>"; };
 		02020000000000000000000A /* ClassificationCandidates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationCandidates.swift; sourceTree = "<group>"; };
 		02020000000000000000000B /* ActivityDataExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDataExport.swift; sourceTree = "<group>"; };
+		02020000000000000000000C /* AnalyticsPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsPresentation.swift; sourceTree = "<group>"; };
 		020300000000000000000001 /* DailyReplicaCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DailyReplicaCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		020300000000000000000002 /* DailyReplica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DailyReplica.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		020300000000000000000003 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
@@ -188,6 +196,7 @@
 			children = (
 				020200000000000000000001 /* ActivityClassifier.swift */,
 				02020000000000000000000B /* ActivityDataExport.swift */,
+				02020000000000000000000C /* AnalyticsPresentation.swift */,
 				020200000000000000000009 /* ActivityDashboardPresentation.swift */,
 				020200000000000000000002 /* ActivityDayPresentation.swift */,
 				020200000000000000000003 /* ActivitySegmentReducer.swift */,
@@ -281,6 +290,7 @@
 		08000000000000000000000E /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				02010000000000000000001B /* AnalyticsService.swift */,
 				020100000000000000000018 /* DashboardService.swift */,
 				020100000000000000000006 /* LibraryService.swift */,
 				020100000000000000000019 /* PrivacyService.swift */,
@@ -296,6 +306,7 @@
 		08000000000000000000000F /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				02010000000000000000001C /* AnalyticsViewModel.swift */,
 				020100000000000000000008 /* MenuBarViewModel.swift */,
 				02010000000000000000000D /* SettingsViewModel.swift */,
 				02010000000000000000000F /* SmartPromptViewModel.swift */,
@@ -310,9 +321,18 @@
 				080000000000000000000011 /* MenuBar */,
 				080000000000000000000012 /* Prompt */,
 				080000000000000000000013 /* Settings */,
+				080000000000000000000015 /* Analytics */,
 				080000000000000000000014 /* Today */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		080000000000000000000015 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				02010000000000000000001D /* AnalyticsView.swift */,
+			);
+			path = Analytics;
 			sourceTree = "<group>";
 		};
 		080000000000000000000011 /* MenuBar */ = {
@@ -455,6 +475,9 @@
 				010100000000000000000015 /* WorkspaceActivityEventObserver.swift in Sources */,
 				010100000000000000000011 /* TodayView.swift in Sources */,
 				010100000000000000000012 /* TodayViewModel.swift in Sources */,
+				01010000000000000000001B /* AnalyticsService.swift in Sources */,
+				01010000000000000000001C /* AnalyticsViewModel.swift in Sources */,
+				01010000000000000000001D /* AnalyticsView.swift in Sources */,
 				010100000000000000000013 /* TrackingService.swift in Sources */,
 				010100000000000000000014 /* PreviewFactory.swift in Sources */,
 			);
@@ -475,6 +498,7 @@
 				010200000000000000000006 /* Models.swift in Sources */,
 				010200000000000000000007 /* SQLiteActivityStore.swift in Sources */,
 				010200000000000000000008 /* SmartPromptEngine.swift in Sources */,
+				01020000000000000000000C /* AnalyticsPresentation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

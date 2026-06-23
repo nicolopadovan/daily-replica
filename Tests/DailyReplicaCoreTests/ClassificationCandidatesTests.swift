@@ -61,6 +61,19 @@ final class ClassificationCandidatesTests: XCTestCase {
         XCTAssertEqual(candidates.map(\.duration), [120, 120, 60])
     }
 
+    func testUnclassifiedBundlelessAppUsesAppNameCandidate() {
+        let candidates = ClassificationCandidatePresenter.unclassifiedCandidates(
+            from: [
+                unclassifiedAppSegment(appBundleID: nil, appName: "java", start: 0, end: 2)
+            ],
+            rules: []
+        )
+
+        XCTAssertEqual(candidates.first?.kind, .appName)
+        XCTAssertEqual(candidates.first?.pattern, "java")
+        XCTAssertEqual(candidates.first?.title, "java")
+    }
+
     private func correctedAppSegment(
         appBundleID: String,
         appName: String,
@@ -98,7 +111,7 @@ final class ClassificationCandidatesTests: XCTestCase {
     }
 
     private func unclassifiedAppSegment(
-        appBundleID: String,
+        appBundleID: String?,
         appName: String,
         start: TimeInterval,
         end: TimeInterval

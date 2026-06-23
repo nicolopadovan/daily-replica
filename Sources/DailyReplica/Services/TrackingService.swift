@@ -58,11 +58,17 @@ final class TrackingService {
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    func stopTracking() {
+    func stopTracking(now: Date = Date()) {
+        guard state.isTracking else {
+            return
+        }
         timer?.invalidate()
         timer = nil
         eventObserver?.stop()
         eventObserver?.onEvent = nil
+        if let lastSegment = state.todaySegments.last, lastSegment.state != .inactive {
+            captureInactiveBoundary(now: now)
+        }
         state.isTracking = false
         state.lastSampleDescription = "Not tracking"
     }

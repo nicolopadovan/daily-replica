@@ -4,16 +4,69 @@ import DailyReplicaCore
 import Foundation
 import SwiftUI
 
+enum AppSection: String, CaseIterable, Identifiable {
+    case today
+    case analytics
+    case contexts
+    case categories
+    case rules
+    case permissions
+    case updates
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .today: "Today"
+        case .analytics: "Analytics"
+        case .contexts: "Projects"
+        case .categories: "Categories"
+        case .rules: "Auto-sort"
+        case .permissions: "Permissions"
+        case .updates: "Updates"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .today: "chart.bar.xaxis"
+        case .analytics: "chart.bar.doc.horizontal"
+        case .contexts: "folder.fill"
+        case .categories: "square.grid.2x2.fill"
+        case .rules: "tag.fill"
+        case .permissions: "lock.shield.fill"
+        case .updates: "arrow.triangle.2.circlepath"
+        }
+    }
+
+    var settingsSection: SettingsSection? {
+        switch self {
+        case .today: nil
+        case .analytics: nil
+        case .contexts: .contexts
+        case .categories: .categories
+        case .rules: .rules
+        case .permissions: .permissions
+        case .updates: .updates
+        }
+    }
+}
+
 @MainActor
 final class AppCoordinator: ObservableObject, AppCoordinating {
+    @Published var selectedSection = AppSection.today
+
     let state: AppState
     let menuBarViewModel: MenuBarViewModel
     let todayViewModel: TodayViewModel
     let settingsViewModel: SettingsViewModel
+    let analyticsViewModel: AnalyticsViewModel
 
     private let libraryService: LibraryService
     private let projectSessionService: ProjectSessionService
+    private let trackingService: TrackingService
     private let dashboardService: DashboardService
+    private let analyticsService: AnalyticsService
     private let privacyService: PrivacyService
     private let updateService: UpdateService
     private let promptService: PromptService
@@ -39,6 +92,7 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
                 contextPersistence: contextPersistence
             )
             let dashboardService = DashboardService(store: store, state: state)
+            let analyticsService = AnalyticsService(store: store, state: state)
             let privacyService = PrivacyService(
                 store: store,
                 state: state,
@@ -60,7 +114,9 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
             self.state = state
             self.libraryService = libraryService
             self.projectSessionService = projectSessionService
+            self.trackingService = trackingService
             self.dashboardService = dashboardService
+            self.analyticsService = analyticsService
             self.privacyService = privacyService
             self.updateService = updateService
             self.promptService = promptService
@@ -84,6 +140,8 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
                 privacyService: privacyService,
                 updateService: updateService
             )
+            self.analyticsViewModel = AnalyticsViewModel(state: state, service: analyticsService)
+            self.analyticsViewModel.coordinator = self
 
             self.menuBarViewModel.coordinator = self
             self.todayViewModel.coordinator = self
@@ -105,6 +163,11 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
             libraryService.loadState()
             projectSessionService.loadState()
             dashboardService.reload()
+            if !state.isTracking {
+                DispatchQueue.main.async { [weak self] in
+                    self?.menuBarViewModel.toggleTracking()
+                }
+            }
         } catch {
             fatalError("Daily Replica could not open its local store: \(error)")
         }
@@ -128,17 +191,46 @@ final class AppCoordinator: ObservableObject, AppCoordinating {
     }
 
     func openToday() {
+        select(.today)
         libraryService.reloadToday()
         projectSessionService.reloadToday()
         dashboardService.reload()
-        openWindow?("today")
+        openWindow?("main")
+    }
+
+    func openAnalytics() {
+        select(.analytics)
+        analyticsService.reload()
+        openWindow?("main")
     }
 
     func openSettings() {
-        openWindow?("settings")
+        select(.categories)
+        openWindow?("main")
+    }
+
+    func openProjects() {
+        select(.contexts)
+        openWindow?("main")
+    }
+
+    func openCategories() {
+        select(.categories)
+        openWindow?("main")
+    }
+
+    func select(_ section: AppSection) {
+        selectedSection = section
+        if let settingsSection = section.settingsSection {
+            settingsViewModel.selectedSection = settingsSection
+        }
     }
 
     func quit() {
+        if state.isTracking {
+            trackingService.stopTracking()
+        }
+        projectSessionService.closeActiveSession()
         NSApp.terminate(nil)
     }
 

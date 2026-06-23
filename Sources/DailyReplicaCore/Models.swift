@@ -103,6 +103,7 @@ public struct ProjectSession: Codable, Equatable, Identifiable, Sendable {
 
 public enum ClassificationRuleKind: String, Codable, CaseIterable, Sendable {
     case appBundleID
+    case appName
     case chromeHost
 }
 
@@ -130,7 +131,7 @@ public struct ClassificationRule: Codable, Equatable, Identifiable, Sendable {
     public static func normalizedPattern(_ pattern: String, kind: ClassificationRuleKind) -> String {
         let trimmed = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
         switch kind {
-        case .appBundleID:
+        case .appBundleID, .appName:
             return trimmed
         case .chromeHost:
             return trimmed.lowercased()

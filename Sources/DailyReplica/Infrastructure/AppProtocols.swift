@@ -12,8 +12,10 @@ protocol ActivityStore: AnyObject {
     func upsertSegment(_ segment: ActivitySegment) throws
     func deleteSegment(id: UUID) throws
     func fetchSegments(in interval: DateInterval) throws -> [ActivitySegment]
+    func fetchAllSegments() throws -> [ActivitySegment]
     func fetchProjectSessions(in interval: DateInterval) throws -> [ProjectSession]
     func fetchOpenProjectSession() throws -> ProjectSession?
+    func fetchSegmentDateBounds() throws -> DateInterval?
     func upsertProjectSession(_ session: ProjectSession) throws
     func deleteAllActivityData() throws
     func deleteAllUserData() throws
@@ -22,6 +24,14 @@ protocol ActivityStore: AnyObject {
 extension ActivityStore {
     func fetchContexts() throws -> [ProjectContext] {
         try fetchContexts(includeArchived: false)
+    }
+
+    func fetchSegmentDateBounds() throws -> DateInterval? {
+        let segments = try fetchAllSegments()
+        guard let start = segments.map(\.start).min(), let end = segments.map(\.end).max() else {
+            return nil
+        }
+        return DateInterval(start: start, end: end)
     }
 }
 
@@ -68,7 +78,10 @@ protocol PromptPresenting: AnyObject {
 @MainActor
 protocol AppCoordinating: AnyObject {
     func openToday()
+    func openAnalytics()
     func openSettings()
+    func openProjects()
+    func openCategories()
     func quit()
     func showPrompt(_ prompt: SmartPrompt)
     func dismissPrompt()

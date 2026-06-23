@@ -116,6 +116,9 @@ public enum ClassificationCandidatePresenter {
                 subtitle: bundleID
             )
         }
+        if let appName = segment.appName {
+            return Target(kind: .appName, pattern: appName, title: appName, subtitle: "App name")
+        }
         return nil
     }
 
@@ -124,6 +127,8 @@ public enum ClassificationCandidatePresenter {
             switch target.kind {
             case .appBundleID:
                 return $0.kind == .appBundleID && $0.pattern == target.pattern
+            case .appName:
+                return $0.kind == .appName && $0.pattern == target.pattern
             case .chromeHost:
                 return $0.kind == .chromeHost && ActivityClassifier.host(target.pattern, matches: $0.pattern)
             }
