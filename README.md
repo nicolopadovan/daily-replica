@@ -85,6 +85,12 @@ swift test
 bash Scripts/build-app.sh debug
 ```
 
+For a fast regression check focused on startup + tracking correctness, run:
+
+```bash
+bash Scripts/health-check.sh
+```
+
 The app will be created at:
 
 ```text
